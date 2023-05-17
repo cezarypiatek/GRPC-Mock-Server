@@ -7,8 +7,10 @@ package greet;
 // The greeting service definition.
 service Greeter {
   // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply);
-  rpc SayManyHello (HelloRequest) returns (stream HelloReply);
+  rpc TestRequestReply (HelloRequest) returns (HelloReply);
+  rpc TestServerStreaming (HelloRequest) returns (stream HelloReply);
+  rpc TestClientStreaming (stream HelloRequest) returns (HelloReply);
+  rpc TestClientServerStreaming (stream HelloRequest) returns (stream HelloReply);
 }
 
 // The request message containing the user's name.

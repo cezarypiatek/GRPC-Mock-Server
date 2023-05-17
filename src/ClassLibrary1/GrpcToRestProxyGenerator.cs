@@ -47,7 +47,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
             return;
         }
 
-
+        
         var services = new List<string>();
         foreach (var serviceBaseClass in classes.Distinct())
         {
@@ -56,13 +56,21 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
             if (semanticModel.GetDeclaredSymbol(serviceBaseClass) is ITypeSymbol typeSymbol)
             {
                 var serviceName = typeSymbol.Name.Substring(0, typeSymbol.Name.Length - 4);
+                var protoServiceName = serviceName;
+                if (serviceBaseClass.Parent is ClassDeclarationSyntax parentTypeSyntax && parentTypeSyntax.Members.OfType<FieldDeclarationSyntax>().SelectMany(x=>x.Declaration.Variables).FirstOrDefault(x=>x.Identifier.ValueText == "__ServiceName") is {} serviceNameField)
+                {
+                    protoServiceName = serviceNameField.Initializer?.Value.ToFullString().Trim('"');
+                }
+
                 var newName = $"{ serviceName }GrpcToRestProxy";
                 services.Add(newName);
                 var sb = new StringBuilder();
                 {
                     sb.AppendLine("using grpc = global::Grpc.Core;");
+                    sb.AppendLine("using Grpc.Core;");
                     sb.AppendLine("using System.Net.Http;");
                     sb.AppendLine("using System.Text.Json;");
+                    sb.AppendLine("using System.Text.Json.Serialization;");
                     sb.AppendLine("");
                     sb.AppendLine($"namespace {compilation.AssemblyName};");
                     sb.AppendLine("");
@@ -75,6 +83,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                     sb.AppendLine("   {");
                     sb.AppendLine($"      _httpClient = factory.CreateClient(\"{serviceName}\");");
                     sb.AppendLine("      _jsonSerializerOptions = new JsonSerializerOptions();");
+                    sb.AppendLine("      _jsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;");
                     sb.AppendLine("      _jsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;");
                     sb.AppendLine("      _jsonSerializerOptions.AddProtobufSupport();");
                     sb.AppendLine("   }");
@@ -82,62 +91,113 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
 
                     foreach (var methodDeclarationSyntax in serviceBaseClass.Members.OfType<MethodDeclarationSyntax>())
                     {
-                        var methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclarationSyntax);
-                       var m2 = methodDeclarationSyntax
-                           .WithAttributeLists(SyntaxFactory.List<AttributeListSyntax>())
-                           .WithModifiers(SyntaxFactory.TokenList(
-                            SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                            SyntaxFactory.Token(SyntaxKind.OverrideKeyword), SyntaxFactory.Token(SyntaxKind.AsyncKeyword)));
+                        if (semanticModel.GetDeclaredSymbol(methodDeclarationSyntax) is { } methodSymbol)
+                        {
+                            var m2 = methodDeclarationSyntax
+                                .WithAttributeLists(SyntaxFactory.List<AttributeListSyntax>())
+                                .WithModifiers(SyntaxFactory.TokenList(
+                                    SyntaxFactory.Token(SyntaxKind.PublicKeyword),
+                                    SyntaxFactory.Token(SyntaxKind.OverrideKeyword), SyntaxFactory.Token(SyntaxKind.AsyncKeyword)));
 
 
-                       sb.AppendLine("   "+m2.WithBody(null).NormalizeWhitespace().ToFullString());
-                       sb.AppendLine("   {");
+                            sb.AppendLine("   " + m2.WithBody(null).NormalizeWhitespace().ToFullString());
+                            sb.AppendLine("   {");
 
-                       
-                       if (methodSymbol.Parameters.Length == 2)
-                       {
-                           //request-reply
-                            sb.AppendLine($"       var payload = JsonSerializer.Serialize({methodSymbol.Parameters[0].Name}, options: _jsonSerializerOptions);");
-                           sb.AppendLine($"        var content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
-                           sb.AppendLine($"        var result = await _httpClient.PostAsync(\"/{serviceName}/{methodSymbol.Name}\", content);");
-                           sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync();");
-                           sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0].ToString()}>(resultContent, _jsonSerializerOptions)!;");
-                       }
-                       else if (methodSymbol.Parameters.Length == 3)
-                       {
-                            //server streaming
-                            sb.AppendLine("        throw new System.NotImplementedException();");
-                       }
+                            
 
+                            if (methodSymbol.Parameters.Length == 2 && methodSymbol.Parameters[0].Name == "requestStream")
+                            {
+                                //client stream
+                                sb.AppendLine($"        var input = new System.Collections.Generic.List<{((INamedTypeSymbol)methodSymbol.Parameters[0].Type).TypeArguments[0].ToString()}>();");
+                                sb.AppendLine($"        await foreach (var item in  requestStream.ReadAllAsync(context.CancellationToken))");
+                                sb.AppendLine("        {");
+                                sb.AppendLine($"            context.CancellationToken.ThrowIfCancellationRequested();");
+                                sb.AppendLine($"            input.Add(item);");
+                                sb.AppendLine("        }");
+                                sb.AppendLine($"        var payload = JsonSerializer.Serialize(input, options: _jsonSerializerOptions);");
+                                sb.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, \"/{protoServiceName}/{methodSymbol.Name}\");");
+                                sb.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
+                                RelayHeaders(sb);
+                                sb.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
+                                sb.AppendLine($"        result.EnsureSuccessStatusCode();");
+                                sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
+                                sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0].ToString()}>(resultContent, _jsonSerializerOptions)!;");
+
+                            }
+                            else if (methodSymbol.Parameters.Length == 2)
+                            {
+                                //request-reply
+                                sb.AppendLine($"        var payload = JsonSerializer.Serialize({methodSymbol.Parameters[0].Name}, options: _jsonSerializerOptions);");
+                                sb.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, \"/{protoServiceName}/{methodSymbol.Name}\");");
+                                sb.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
+                                RelayHeaders(sb);
+                                sb.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
+                                sb.AppendLine($"        result.EnsureSuccessStatusCode();");
+                                sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
+                                sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0].ToString()}>(resultContent, _jsonSerializerOptions)!;");
+                            }
+
+                            if (methodSymbol.Parameters.Length == 3 && methodSymbol.Parameters[0].Name == "requestStream")
+                            {
+                                //both side streaming
+                                sb.AppendLine("        throw new System.NotSupportedException();");
+                            }
+                            else if (methodSymbol.Parameters.Length == 3)
+                            {
+                                //server streaming
+                                sb.AppendLine($"        var payload = JsonSerializer.Serialize({methodSymbol.Parameters[0].Name}, options: _jsonSerializerOptions);");
+                                sb.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, \"/{protoServiceName}/{methodSymbol.Name}\");");
+                                sb.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
+                                RelayHeaders(sb);
+                                sb.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
+                                sb.AppendLine($"        result.EnsureSuccessStatusCode();");
+                                sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
+
+                                sb.AppendLine($"        foreach(var item in JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0].ToString()}[]>(resultContent, _jsonSerializerOptions)!)");
+                                sb.AppendLine("        {");
+                                sb.AppendLine("            context.CancellationToken.ThrowIfCancellationRequested();");
+                                sb.AppendLine($"            await responseStream.WriteAsync(item);");
+                                sb.AppendLine("        }");
+                            }
+
+                           
 
                             sb.AppendLine("   }");
-                       sb.AppendLine();
+                            sb.AppendLine();
+                        }
+                       
                     }
                     sb.AppendLine("}");
                 }
 
                 context.AddSource($"{newName}.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
             }
-
-            var sb1 = new StringBuilder();
-            sb1.AppendLine($"namespace {compilation.AssemblyName};");
-            sb1.AppendLine("");
-            sb1.AppendLine("public static partial class GrpcToRestProxyExtensions");
-            sb1.AppendLine("{");
-            sb1.AppendLine("    public static void MapGrpcToRestProxies(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder)");
-            sb1.AppendLine("    {");
-            foreach (var service in services)
-            {
-                sb1.AppendLine($"        builder.MapGrpcService<{service}>();");
-            }
-            sb1.AppendLine("    }");
-            sb1.AppendLine("}");
-
-            context.AddSource($"GrpcToRestProxyExtensions.g.cs", SourceText.From(sb1.ToString(), Encoding.UTF8));
         }
+
+        var sb1 = new StringBuilder();
+        sb1.AppendLine($"namespace {compilation.AssemblyName};");
+        sb1.AppendLine("");
+        sb1.AppendLine("public static partial class GrpcToRestProxyExtensions");
+        sb1.AppendLine("{");
+        sb1.AppendLine("    public static void MapGrpcToRestProxies(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder)");
+        sb1.AppendLine("    {");
+        foreach (var service in services)
+        {
+            sb1.AppendLine($"        builder.MapGrpcService<{service}>();");
+        }
+        sb1.AppendLine("    }");
+        sb1.AppendLine("}");
+
+        context.AddSource($"GrpcToRestProxyExtensions.g.cs", SourceText.From(sb1.ToString(), Encoding.UTF8));
     }
 
-    
+    private static void RelayHeaders(StringBuilder sb)
+    {
+        sb.AppendLine(@"        foreach (var requestHeader in context.RequestHeaders)
+        {
+            httpRequest.Headers.Add(requestHeader.Key, requestHeader.Value);
+        }");
+    }
 
 
     private static ClassDeclarationSyntax GetProxyClass(GeneratorSyntaxContext ctx)
