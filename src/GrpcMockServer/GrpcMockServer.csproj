@@ -4,26 +4,23 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
-
+    <ProtoRoot Condition=" '$(ProtoRoot)' == '' ">Protos</ProtoRoot>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Protos\greet.proto" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.53.0" />
     <PackageReference Include="Protobuf.System.Text.Json" Version="1.2.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
     <PackageReference Include="WireMock.Net" Version="1.5.25" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ClassLibrary1\GrpcToRestGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\GrpcToRestGenerator\GrpcToRestGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
-    <Protobuf Include="Protos\greet.proto" ProtoRoot="Protos" GrpcServices="Server" />
+    <Protobuf Include="$(ProtoRoot)\**\*.proto" ProtoRoot="$(ProtoRoot)" GrpcServices="Server" />
   </ItemGroup>
 </Project>

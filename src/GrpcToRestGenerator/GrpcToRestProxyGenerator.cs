@@ -81,7 +81,8 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                     sb.AppendLine("");
                     sb.AppendLine($"   public {newName}(IHttpClientFactory factory)");
                     sb.AppendLine("   {");
-                    sb.AppendLine($"      _httpClient = factory.CreateClient(\"{serviceName}\");");
+                    //sb.AppendLine($"      _httpClient = factory.CreateClient(\"{serviceName}\");");
+                    sb.AppendLine($"      _httpClient = factory.CreateClient(\"WireMock\");");
                     sb.AppendLine("      _jsonSerializerOptions = new JsonSerializerOptions();");
                     sb.AppendLine("      _jsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;");
                     sb.AppendLine("      _jsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;");
@@ -179,7 +180,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         sb1.AppendLine("");
         sb1.AppendLine("public static partial class GrpcToRestProxyExtensions");
         sb1.AppendLine("{");
-        sb1.AppendLine("    public static void MapGrpcToRestProxies(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder)");
+        sb1.AppendLine("    static partial void MapAllProxies(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder)");
         sb1.AppendLine("    {");
         foreach (var service in services)
         {
