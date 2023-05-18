@@ -48,7 +48,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         }
 
         
-        var services = new List<string>();
+        var services = new List<(string,string)>();
         foreach (var serviceBaseClass in classes.Distinct())
         {
             
@@ -63,9 +63,11 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                 }
 
                 var newName = $"{ serviceName }GrpcToRestProxy";
-                services.Add(newName);
+                services.Add((newName, protoServiceName));
                 var sb = new StringBuilder();
                 {
+                    sb.AppendLine("#pragma warning disable CS8981 ");
+                    sb.AppendLine("#pragma warning disable CS1998 ");
                     sb.AppendLine("using grpc = global::Grpc.Core;");
                     sb.AppendLine("using Grpc.Core;");
                     sb.AppendLine("using System.Net.Http;");
@@ -184,7 +186,9 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         sb1.AppendLine("    {");
         foreach (var service in services)
         {
-            sb1.AppendLine($"        builder.MapGrpcService<{service}>();");
+            var (dotnetName, protoName) = service;
+            sb1.Append($"        System.Console.WriteLine(\"Registered mock for: {protoName}\");");
+            sb1.AppendLine($"        builder.MapGrpcService<{dotnetName}>();");
         }
         sb1.AppendLine("    }");
         sb1.AppendLine("}");
