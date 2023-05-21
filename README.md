@@ -35,8 +35,8 @@ GRPC-Mock-Server works in the following way:
 
 ## TODO
 - [ ] Implement error response codes
-- [ ] Implement library that wraps WireMock API for stubbing
-- [ ] Implement test container
+- [x] Implement library that wraps WireMock API for stubbing
+- [x] Implement test container
 
 ## Alternatives
 - https://github.com/Adven27/grpc-wiremock
