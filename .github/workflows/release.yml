@@ -1,0 +1,62 @@
+name: release
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - '!src/.editorconfig'
+jobs:
+  build-extension:
+    runs-on: windows-latest
+    env: 
+        DOTNET_NOLOGO: true
+        DOTNET_CLI_TELEMETRY_OPTOUT: true
+        RepositoryUrl: 'https://github.com/${{ github.repository }}'
+        RepositoryBranch: '${{ github.ref }}'
+        SourceRevisionId: '${{ github.sha }}'        
+        Configuration: Release
+        SolutionPath: src\GrpcTestKit\GrpcTestKit.sln
+        Deterministic: true
+        PackageReleaseNotes: 'https://github.com/${{ github.repository }}/releases'
+        ContinuousIntegrationBuild: true
+        Authors: 'Cezary Piątek'
+        PackageLicenseExpression: 'MIT'
+    steps:
+    - uses: actions/checkout@v2   
+    - name: Setup .NET Core 7
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '7.0'   
+    - name: Calculate next version
+      uses: cezarypiatek/NextVersionGeneratorAction@0.4
+      with:
+        minor-pattern: '.*'
+        major-pattern: 'BREAKING CHANGES'
+        output-to-env-variable: 'Version'    
+    - name: Restore dependencies
+      run: |
+        dotnet nuget locals all --clear
+        dotnet restore $env:SolutionPath         
+    - name: Build extension
+      run: dotnet build $env:SolutionPath   
+    - name: Generate release note
+      run: |
+        git fetch --prune
+        $commitLog = git log "$(git describe --tags --abbrev=0)..HEAD" --pretty=format:"- %s"
+        $commitLog = if([string]::IsNullOrWhitespace($commitLog)){git log --pretty=format:"- %s"}else{$commitLog}
+        "What's new: `r`n`r`n$([string]::Join("`r`n",$commitLog))" | Out-File release_note.md -Encoding utf8
+    - name: Create Github Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.Version }}
+        release_name:  ${{ env.Version }}
+        body_path: release_note.md
+        draft: false
+        prerelease: false
+    - name: Publish extension to Nuget
+      run: |
+        dotnet nuget push src\GrpcTestKit\GrpcTestKit\bin\Release\GrpcTestKit.${{ env.Version }}.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
