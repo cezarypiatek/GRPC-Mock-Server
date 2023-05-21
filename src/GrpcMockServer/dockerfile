@@ -1,9 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:7.0
-ADD src /src
+ADD ./ /src
 ADD run.sh /src/run.sh
 WORKDIR /src
 # Pre-build project to cache nugets inside the container
 RUN dotnet build
+RUN dotnet build ./GrpcMockServer/GrpcMockServer.csproj /p:FastTrack=true /p:RunAnalyzers=false
 # GRPC endpoint
 EXPOSE 5033
 # WireMock endpoint

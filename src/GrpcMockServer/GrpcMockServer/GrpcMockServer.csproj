@@ -5,9 +5,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>    
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
     <ProtoRoot Condition=" '$(ProtoRoot)' == '' ">Protos</ProtoRoot>
+    <RestoreAdditionalProjectSources Condition="'$(FastTrack)' == 'true'">../GrpcToRestGenerator/bin/$(Configuration)/</RestoreAdditionalProjectSources>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
 
 
@@ -17,9 +19,14 @@
     <PackageReference Include="WireMock.Net" Version="1.5.25" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(FastTrack)' == ''">
     <ProjectReference Include="..\GrpcToRestGenerator\GrpcToRestGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FastTrack)' == 'true'">
+    <PackageReference Include="GrpcToRestGenerator" Version="1.0.0" />
+  </ItemGroup>
+
+
   <ItemGroup>
     <Protobuf Include="$(ProtoRoot)\**\*.proto" ProtoRoot="$(ProtoRoot)" GrpcServices="Server" />
   </ItemGroup>

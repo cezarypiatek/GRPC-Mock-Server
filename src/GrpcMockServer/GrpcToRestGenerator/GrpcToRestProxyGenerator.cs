@@ -184,10 +184,11 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         sb1.AppendLine("{");
         sb1.AppendLine("    static partial void MapAllProxies(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder)");
         sb1.AppendLine("    {");
+        sb1.AppendLine("        System.Console.WriteLine(\"Registered GRPC-To-Rest proxies:\");");
         foreach (var service in services)
         {
             var (dotnetName, protoName) = service;
-            sb1.Append($"        System.Console.WriteLine(\"Registered mock for: {protoName}\");");
+            sb1.Append($"        System.Console.WriteLine(\"\t* {protoName}\");");
             sb1.AppendLine($"        builder.MapGrpcService<{dotnetName}>();");
         }
         sb1.AppendLine("    }");

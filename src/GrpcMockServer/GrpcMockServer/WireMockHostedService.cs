@@ -7,6 +7,13 @@ namespace GrpcMockServer
 {
     public class WireMockHostedService:IHostedService
     {
+        private readonly ILogger<WireMockHostedService> _logger;
+
+        public WireMockHostedService(ILogger<WireMockHostedService> logger)
+        {
+            _logger = logger;
+        }
+
         private WireMockServer? _wireMock;
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -20,6 +27,7 @@ namespace GrpcMockServer
                     {
                         message = "Hello from WireMock"
                     }));
+            _logger.LogInformation("GRPC-Mock-Server is ready");
             return Task.CompletedTask;
         }
 

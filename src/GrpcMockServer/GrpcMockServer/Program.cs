@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
-builder.Services.AddControllers();
 builder.Services.AddGrpc();
 builder.Services.AddHostedService<WireMockHostedService>();
 builder.Services.AddHttpClient("WireMock", config =>
