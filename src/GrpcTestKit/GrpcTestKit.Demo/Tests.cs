@@ -11,7 +11,7 @@ namespace GrpcTestKit.Demo
         public async Task Test1()
         {
 
-            await using var connector = new GrpcMockServerConnector("c:\\tmp\\prototest");
+            await using var connector = new TestContainerGrpcMockServerConnector("protos");
 
             await connector.Install();
 
@@ -71,7 +71,8 @@ namespace GrpcTestKit.Demo
                 response: new { message = "Hi there streaming client" }
             );
 
-            await Task.Delay(TimeSpan.FromMinutes(1));
+
+            grpcMockClient.Inspect();
         }
     }
 }

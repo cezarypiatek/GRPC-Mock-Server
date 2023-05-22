@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using RestEase;
@@ -6,16 +7,24 @@ using WireMock.Client;
 
 namespace GrpcTestKit;
 
-public class GrpcMockServerConnector : ITestComponentConnector<IGrpcMockClient>
+public class TestContainerGrpcMockServerConnector : ITestComponentConnector<IGrpcMockClient>
 {
     private readonly string _protoDirectory;
     private readonly string _dockerImage;
     private readonly int _grpcPort;
     private IContainer? container;
 
-    public GrpcMockServerConnector(string protoDirectory, int grpcPort = 5033, string dockerImage = "cezarypiatek/grpc-mock-server")
+    public TestContainerGrpcMockServerConnector(string protoDirectory, int grpcPort = 5033, string dockerImage = "cezarypiatek/grpc-mock-server")
     {
-        _protoDirectory = protoDirectory;
+        if (Path.IsPathRooted(protoDirectory))
+        {
+            _protoDirectory = protoDirectory;
+        }
+        else
+        {
+            _protoDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, protoDirectory);
+        }
+        
         _dockerImage = dockerImage;
         _grpcPort = grpcPort;
     }
@@ -51,9 +60,12 @@ public class GrpcMockServerConnector : ITestComponentConnector<IGrpcMockClient>
         }
 
         var wireMockPort = container.GetMappedPublicPort("9095");
-        var wireMockApiClient = RestClient.For<IWireMockAdminApi>($"http://localhost:{wireMockPort}");
-        return new GrpcMockClient(wireMockApiClient);
+        var baseUrl = $"http://localhost:{wireMockPort}";
+        var wireMockApiClient = RestClient.For<IWireMockAdminApi>(baseUrl);
+        return new GrpcMockClient(wireMockApiClient, baseUrl);
     }
+
+
 
     public async ValueTask DisposeAsync()
     {

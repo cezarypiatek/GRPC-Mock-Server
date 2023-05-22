@@ -10,6 +10,7 @@
     <PackageReference Include="Protobuf.System.Text.Json" Version="1.2.0" />
     <PackageReference Include="Testcontainers" Version="3.1.0" />
     <PackageReference Include="WireMock.Net.Abstractions" Version="1.5.25" />
+    <PackageReference Include="WireMock.Net.Extensions.WireMockInspector" Version="1.0.12" />
     <PackageReference Include="WireMock.Net.RestClient" Version="1.5.25" />
   </ItemGroup>
 </Project>
