@@ -3,9 +3,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'src/**'
-      - '!src/.editorconfig'
+    # paths:
+    #   - 'src/**'
+    #   - '!src/.editorconfig'
 jobs:
   build-extension:
     runs-on: windows-latest
@@ -60,4 +60,4 @@ jobs:
     - name: Publish extension to Nuget
       run: |
         dotnet nuget push src\GrpcTestKit\GrpcTestKit\bin\Release\GrpcTestKit.${{ env.Version }}.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
-        dotnet nuget push src\GrpcTestKit\TestCharts\bin\Release\TestCharts.${{ env.Version }}.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+        dotnet nuget push src\GrpcTestKit\TestCharts\bin\Release\TestCharts.${{ env.Version }}.nupkg -k ${{ secrets.NUGET_API_KEY_TC }} -s https://api.nuget.org/v3/index.json
