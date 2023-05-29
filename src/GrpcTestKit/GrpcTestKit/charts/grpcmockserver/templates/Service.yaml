@@ -1,0 +1,17 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+    name: {{.Release.Name}}-grpcmockserver-service
+spec:
+    type: ClusterIP
+    selector:
+      app: {{.Release.Name}}-grpcmockserver
+    ports:
+    - name: grpcport
+      port: 5033
+      targetPort: 5033
+      protocol: TCP
+    - name: wiremockport
+      port: 9095
+      targetPort: 9095
+      protocol: TCP

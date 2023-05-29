@@ -1,0 +1,33 @@
+﻿apiVersion: v1
+kind: Pod
+metadata:
+  name: {{.Release.Name}}-grpcmockserver
+  labels:
+    app: {{.Release.Name}}-grpcmockserver
+spec:
+  restartPolicy: Never 
+  containers: 
+  - name: grpcmockserver
+    image: {{ .Values.dockerImage | default "cezarypiatek/grpc-mock-server" }}
+    imagePullPolicy: IfNotPresent
+    ports:
+    - name: wiremockport
+      containerPort: 9095
+    - name: grpcport
+      containerPort: 5033
+    readinessProbe:
+      tcpSocket:
+        port: 9095
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 10
+    volumeMounts:
+{{- range .Values.protoFiles }}
+      - name: protodrive
+        mountPath: {{ printf "/protos/%s" (.path) }}
+        subPath: {{ .key }}
+{{ end }}
+  volumes:
+    - name: protodrive
+      configMap:
+        name: {{.Release.Name}}-protodrive

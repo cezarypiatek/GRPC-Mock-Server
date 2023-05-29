@@ -1,4 +1,4 @@
-namespace GrpcTestKit;
+namespace GrpcTestKit.TestConnectors;
 
 internal class MockHandle : IAsyncDisposable
 {

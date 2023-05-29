@@ -2,7 +2,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace GrpcTestKit;
+namespace GrpcTestKit.TestConnectors;
 
 public static class GrpcMockClientExtensions
 {
@@ -28,7 +28,7 @@ public static class GrpcMockClientExtensions
     /// <param name="response">Expected response</param>
     public static async Task MockRequestReply(this IGrpcMockClient @this, string serviceName, string methodName, object? request, object response)
     {
-        var responseBody = JsonSerializer.Serialize(response,options: _jsonSerializerOptions);
+        var responseBody = JsonSerializer.Serialize(response, options: _jsonSerializerOptions);
         await @this.MockEndpoint(builder =>
         {
             builder.WithRequest(x =>
@@ -40,7 +40,7 @@ public static class GrpcMockClientExtensions
                 if (request != null)
                 {
                     var requestBody = JsonSerializer.Serialize(request, options: _jsonSerializerOptions);
-                    rmb.WithBody(body => body.WithMatcher(m => 
+                    rmb.WithBody(body => body.WithMatcher(m =>
                             m.WithName("JsonPartialWildcardMatcher")
                                 .WithPattern(requestBody)
                                 .WithIgnoreCase(true)

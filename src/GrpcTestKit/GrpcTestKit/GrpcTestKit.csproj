@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,5 +12,14 @@
     <PackageReference Include="WireMock.Net.Abstractions" Version="1.5.25" />
     <PackageReference Include="WireMock.Net.Extensions.WireMockInspector" Version="1.0.12" />
     <PackageReference Include="WireMock.Net.RestClient" Version="1.5.25" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="charts/**/*.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TestCharts\TestCharts.csproj" />
   </ItemGroup>
 </Project>

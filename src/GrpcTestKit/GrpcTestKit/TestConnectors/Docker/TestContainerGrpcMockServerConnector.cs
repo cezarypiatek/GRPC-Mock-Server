@@ -5,9 +5,9 @@ using DotNet.Testcontainers.Containers;
 using RestEase;
 using WireMock.Client;
 
-namespace GrpcTestKit;
+namespace GrpcTestKit.TestConnectors.Docker;
 
-public class TestContainerGrpcMockServerConnector : ITestComponentConnector<IGrpcMockClient>
+public class TestContainerGrpcMockServerConnector : IGrpcMockServerConnector
 {
     private readonly string _protoDirectory;
     private readonly string _dockerImage;
@@ -24,16 +24,16 @@ public class TestContainerGrpcMockServerConnector : ITestComponentConnector<IGrp
         {
             _protoDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, protoDirectory);
         }
-        
+
         _dockerImage = dockerImage;
         _grpcPort = grpcPort;
     }
 
     public async Task Install()
     {
-        this.container = new ContainerBuilder()
+        container = new ContainerBuilder()
             .WithImage(_dockerImage)
-            .WithPortBinding(9095, assignRandomHostPort:true)
+            .WithPortBinding(9095, assignRandomHostPort: true)
             .WithPortBinding(5033, _grpcPort)
 
             .WithOutputConsumer(Consume.RedirectStdoutAndStderrToConsole())
@@ -54,7 +54,7 @@ public class TestContainerGrpcMockServerConnector : ITestComponentConnector<IGrp
 
     public IGrpcMockClient CreateClient()
     {
-        if (this.container == null)
+        if (container == null)
         {
             throw new InvalidOperationException("Connector not installed. Call Install() method first.");
         }
