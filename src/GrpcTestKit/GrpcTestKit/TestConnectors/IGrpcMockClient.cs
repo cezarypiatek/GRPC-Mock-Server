@@ -1,8 +1,8 @@
 using WireMock.Admin.Mappings;
 
-namespace GrpcTestKit;
+namespace GrpcTestKit.TestConnectors;
 
-public interface IGrpcMockClient:IAsyncDisposable
+public interface IGrpcMockClient : IAsyncDisposable
 {
     Task<IAsyncDisposable> MockEndpoint(Action<MappingModelBuilder> configureBuilder);
     void Inspect();

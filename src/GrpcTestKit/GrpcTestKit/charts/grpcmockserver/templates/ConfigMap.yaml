@@ -1,0 +1,9 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{.Release.Name}}-protodrive
+data:
+{{ range .Values.protoFiles }}
+  {{ .key }}: |
+{{ .content | indent 4 }}
+{{ end }}

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  <IncludeSymbols>true</IncludeSymbols>
+  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  <DebugType>portable</DebugType>
+  <Authors>Cezary Piątek</Authors>
+  <Nullable>enable</Nullable>
+  <LangVersion>10</LangVersion>
+  <Description>A library to support component testing inside Kubernetes cluster</Description>
+  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+     <PackageReference Include="CliWrap" Version="3.6.3" />
+     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+     <PackageReference Include="System.Threading.Channels" Version="7.0.0" />
+  </ItemGroup>
+</Project>

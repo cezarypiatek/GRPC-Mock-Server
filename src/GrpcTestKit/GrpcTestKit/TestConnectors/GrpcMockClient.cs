@@ -2,7 +2,7 @@ using WireMock.Admin.Mappings;
 using WireMock.Client;
 using WireMock.Net.Extensions.WireMockInspector;
 
-namespace GrpcTestKit;
+namespace GrpcTestKit.TestConnectors;
 
 public class GrpcMockClient : IGrpcMockClient
 {

@@ -4,7 +4,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -19,6 +18,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GrpcTestKit\GrpcTestKit.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="protos\**\*.proto">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
