@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TestCharts;
+namespace TestHelmCharts;
 
 public static class ProcessLauncherExtensions
 {

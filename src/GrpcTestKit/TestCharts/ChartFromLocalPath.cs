@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace TestCharts;
+namespace TestHelmCharts;
 
 public class ChartFromLocalPath : IChart
 {

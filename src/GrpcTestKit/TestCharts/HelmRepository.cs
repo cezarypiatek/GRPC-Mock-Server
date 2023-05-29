@@ -1,4 +1,4 @@
-﻿namespace TestCharts;
+﻿namespace TestHelmCharts;
 
 public class HelmRepository
 {

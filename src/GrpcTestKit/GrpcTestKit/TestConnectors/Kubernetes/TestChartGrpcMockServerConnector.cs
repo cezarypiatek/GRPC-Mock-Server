@@ -1,5 +1,4 @@
 using RestEase;
-using TestCharts;
 using WireMock.Client;
 
 namespace GrpcTestKit.TestConnectors.Kubernetes;

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 
-namespace TestCharts;
+namespace TestHelmCharts;
 
 public interface IProcessLauncher
 {

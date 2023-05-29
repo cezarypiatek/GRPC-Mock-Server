@@ -20,6 +20,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\TestCharts\TestCharts.csproj" />
+    <ProjectReference Include="..\TestCharts\TestHelmCharts.csproj" />
   </ItemGroup>
 </Project>

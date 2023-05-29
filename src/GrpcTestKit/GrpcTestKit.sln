@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcTestKit", "GrpcTestKit\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcTestKit.Demo", "GrpcTestKit.Demo\GrpcTestKit.Demo.csproj", "{77AF974E-F681-4C34-8893-E46D6E9112E4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestCharts", "TestCharts\TestCharts.csproj", "{92CED261-AF92-4405-B9A1-F789C0AD10B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestHelmCharts", "TestCharts\TestHelmCharts.csproj", "{92CED261-AF92-4405-B9A1-F789C0AD10B1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
