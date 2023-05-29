@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using GrpcTestKit.TestConnectors;
 using GrpcTestKit.TestConnectors.Docker;
 using GrpcTestKit.TestConnectors.Kubernetes;
@@ -9,7 +10,7 @@ namespace GrpcTestKit.Demo
         [Test]
         public async Task test_with_testcontainers()
         {
-
+            using var activity = new Activity("test").Start();
             await using var connector = new TestContainerGrpcMockServerConnector("protos");
 
             await connector.Install();
