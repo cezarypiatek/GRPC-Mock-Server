@@ -1,4 +1,4 @@
-﻿apiVersion: v1
+apiVersion: v1
 description: A Helm chart grpcmockserver
 name: grpcmockserver
 version: 1.0.0
