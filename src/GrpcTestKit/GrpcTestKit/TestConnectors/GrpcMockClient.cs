@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using WireMock.Admin.Mappings;
 using WireMock.Client;
 using WireMock.Net.Extensions.WireMockInspector;
@@ -26,7 +27,7 @@ public class GrpcMockClient : IGrpcMockClient
     }
 
 
-    public void Inspect() => WireMockServerExtensions.Inspect(_adminUrl);
+    public void Inspect([CallerMemberName] string title = "") => WireMockServerExtensions.Inspect(_adminUrl, title);
 
     public ValueTask DisposeAsync() => default;
 }

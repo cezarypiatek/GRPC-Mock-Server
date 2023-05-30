@@ -1,6 +1,7 @@
 namespace GrpcTestKit.TestConnectors;
 
-public interface IGrpcMockServerConnector : ITestComponentConnector<IGrpcMockClient>
+public interface IGrpcMockServerConnector
 {
-
+    Task Install();
+    IGrpcMockClient CreateClient();
 }

@@ -48,7 +48,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         }
 
         
-        var services = new List<(string,string)>();
+        var services = new List<(string,string, string)>();
         foreach (var serviceBaseClass in classes.Distinct())
         {
             
@@ -62,8 +62,9 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                     protoServiceName = serviceNameField.Initializer?.Value.ToFullString().Trim('"');
                 }
 
-                var newName = $"{ serviceName }GrpcToRestProxy";
-                services.Add((newName, protoServiceName));
+                var className = $"{typeSymbol.ContainingNamespace.ToString().Replace(".","")}{ serviceName }GrpcToRestProxy";
+                var proxyNamespace = compilation.AssemblyName;
+                services.Add((className, proxyNamespace, protoServiceName));
                 var sb = new StringBuilder();
                 {
                     sb.AppendLine("#pragma warning disable CS8981 ");
@@ -74,14 +75,14 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                     sb.AppendLine("using System.Text.Json;");
                     sb.AppendLine("using System.Text.Json.Serialization;");
                     sb.AppendLine("");
-                    sb.AppendLine($"namespace {compilation.AssemblyName};");
+                    sb.AppendLine($"namespace {proxyNamespace};");
                     sb.AppendLine("");
-                    sb.AppendLine($"public class {newName} : {typeSymbol.ToDisplayString()}");
+                    sb.AppendLine($"public class {className} : {typeSymbol.ToDisplayString()}");
                     sb.AppendLine("{");
                     sb.AppendLine("   readonly HttpClient _httpClient;");
                     sb.AppendLine("   readonly JsonSerializerOptions _jsonSerializerOptions;");
                     sb.AppendLine("");
-                    sb.AppendLine($"   public {newName}(IHttpClientFactory factory)");
+                    sb.AppendLine($"   public {className}(IHttpClientFactory factory)");
                     sb.AppendLine("   {");
                     //sb.AppendLine($"      _httpClient = factory.CreateClient(\"{serviceName}\");");
                     sb.AppendLine($"      _httpClient = factory.CreateClient(\"WireMock\");");
@@ -173,7 +174,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                     sb.AppendLine("}");
                 }
 
-                context.AddSource($"{newName}.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+                context.AddSource($"{className}.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
             }
         }
 
@@ -187,9 +188,9 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         sb1.AppendLine("        System.Console.WriteLine(\"Registered GRPC-To-Rest proxies:\");");
         foreach (var service in services)
         {
-            var (dotnetName, protoName) = service;
+            var (dotnetName, proxyNamespace, protoName) = service;
             sb1.Append($"        System.Console.WriteLine(\"\t* {protoName}\");");
-            sb1.AppendLine($"        builder.MapGrpcService<{dotnetName}>();");
+            sb1.AppendLine($"        builder.MapGrpcService<{proxyNamespace}.{dotnetName}>();");
         }
         sb1.AppendLine("    }");
         sb1.AppendLine("}");

@@ -8,7 +8,7 @@ public class ChartFromRepository : IChart
     private readonly string _chartName;
     private readonly string? _version;
 
-    public ChartFromRepository(HelmRepository repository, string chartName, string? version)
+    public ChartFromRepository(HelmRepository repository, string chartName, string? version = null)
     {
         _repository = repository;
         _chartName = chartName;

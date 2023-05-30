@@ -41,8 +41,8 @@ public class TestChartGrpcMockServerConnector : IGrpcMockServerConnector
         };
 
         _release = await _chartInstaller.Install(_chart, _releaseName, overrides);
-        await _release.StartPortForward(serviceName: $"{_releaseName}-grpcmockserver-service", servicePort: 5033, localPort: _grpcPort);
-        _wireMockPort = await _release.StartPortForward(serviceName: $"{_releaseName}-grpcmockserver-service", servicePort: 9095);
+        _ = await _release.StartPortForwardForService(serviceName: $"{_releaseName}-grpcmockserver-service", servicePort: 5033, localPort: _grpcPort);
+        _wireMockPort = await _release.StartPortForwardForService(serviceName: $"{_releaseName}-grpcmockserver-service", servicePort: 9095);
     }
 
     public IGrpcMockClient CreateClient()

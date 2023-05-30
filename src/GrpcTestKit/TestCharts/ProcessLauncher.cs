@@ -11,11 +11,11 @@ namespace TestHelmCharts
 {
     public class ProcessLauncher : IProcessLauncher
     {
-        private readonly IProcessOutputWriter? _processOutputWriter;
+        private readonly IProcessOutputWriter _processOutputWriter;
 
         public ProcessLauncher(IProcessOutputWriter? processOutputWriter = null)
         {
-            _processOutputWriter = processOutputWriter;
+            _processOutputWriter = processOutputWriter ?? new ConsoleProcessOutputWriter();
         }
 
         public async IAsyncEnumerable<string> Execute(string command, string parameters, [EnumeratorCancellation] CancellationToken token)
@@ -34,13 +34,13 @@ namespace TestHelmCharts
                         .WithStandardOutputPipe(PipeTarget.ToDelegate(async s =>
                         {
                             await writer.WriteAsync(s, default);
-                            _processOutputWriter?.Write(s);
+                            _processOutputWriter.Write(s);
                         }))
                         .WithStandardErrorPipe(PipeTarget.ToDelegate(async s =>
                         {
                             await writer.WriteAsync(s, default);
                             errorOutput.Append(s);
-                            _processOutputWriter?.WriteError(s);
+                            _processOutputWriter.WriteError(s);
                         }))
                         .ExecuteAsync(token);
                 }

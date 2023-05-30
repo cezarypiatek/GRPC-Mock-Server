@@ -35,7 +35,6 @@ public class TestContainerGrpcMockServerConnector : IGrpcMockServerConnector
             .WithImage(_dockerImage)
             .WithPortBinding(9095, assignRandomHostPort: true)
             .WithPortBinding(5033, _grpcPort)
-
             .WithOutputConsumer(Consume.RedirectStdoutAndStderrToConsole())
             .WithWaitStrategy(
                 Wait.ForUnixContainer()

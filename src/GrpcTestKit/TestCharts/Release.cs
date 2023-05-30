@@ -19,10 +19,16 @@ public class Release : IAsyncDisposable
         _processExecutor = processExecutor;
     }
 
-    public async Task<int> StartPortForward(string serviceName, int servicePort, int? localPort = null)
+    public async Task<int> StartPortForwardForService(string serviceName, int servicePort, int? localPort = null) 
+        => await StartPortForwardFor("service", serviceName, servicePort, localPort);
+    
+    public async Task<int> StartPortForwardForPod(string serviceName, int servicePort, int? localPort = null) 
+        => await StartPortForwardFor("pod", serviceName, servicePort, localPort);
+
+    private async Task<int> StartPortForwardFor(string elementType, string elementName, int servicePort, int? localPort)
     {
         var cancellationTokenSource = new CancellationTokenSource();
-        var asyncEnumerable = _processExecutor.Execute("kubectl", $"port-forward service/{serviceName} {localPort}:{servicePort}", cancellationTokenSource.Token);
+        var asyncEnumerable = _processExecutor.Execute("kubectl", $"port-forward {elementType}/{elementName} {localPort}:{servicePort}", cancellationTokenSource.Token);
 
         var enumerator = asyncEnumerable.GetAsyncEnumerator(default);
         await enumerator.MoveNextAsync();
@@ -31,7 +37,7 @@ public class Release : IAsyncDisposable
             _portForwards.Add((ReadToEnd(enumerator), cancellationTokenSource));
             return ExtractPortNumber(enumerator.Current);
         }
-        
+
         await ReadToEnd(enumerator);
         return 0;
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -24,8 +25,8 @@ public class ChartInstaller
     /// <param name="chart"></param>
     /// <param name="releaseName"></param>
     /// <param name="overrides"></param>
-    /// <returns></returns>
-    public async Task<Release> Install(IChart chart, string releaseName, object overrides, TimeSpan? timeout = null)
+    /// <param name="timeout"></param>
+    public async Task<Release> Install(IChart chart, string releaseName, object? overrides = null, TimeSpan? timeout = null)
     {
         var executeToEnd = await _processLauncher.ExecuteToEnd("helm", $"list --filter {releaseName} -o json", default);
         if (executeToEnd != "[]")
@@ -48,13 +49,15 @@ public class ChartInstaller
 
         chart.ApplyInstallParameters(parameters);
 
-        var serializedOverrides = JsonConvert.SerializeObject(overrides);
-        var overridesPath = Path.Combine(Path.GetTempPath(), $"{releaseName}.json");
-        File.WriteAllText(overridesPath, serializedOverrides);
-        parameters.Add($"-f \"{overridesPath}\"");
+        if (overrides != null)
+        {
+            var serializedOverrides = JsonConvert.SerializeObject(overrides);
+            var overridesPath = Path.Combine(Path.GetTempPath(), $"{releaseName}.json");
+            File.WriteAllText(overridesPath, serializedOverrides, Encoding.UTF8);
+            parameters.Add($"-f \"{overridesPath}\"");    
+        }
 
         await _processLauncher.ExecuteToEnd("helm", $"upgrade {releaseName} {string.Join(" ", parameters)}", default);
-        File.Delete(overridesPath);
         return new Release(releaseName, _processLauncher);
     }
 }
