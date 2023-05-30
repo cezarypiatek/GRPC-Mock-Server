@@ -1,5 +1,5 @@
 using RestEase;
-using TestHelmCharts;
+using SmoothSailing;
 using WireMock.Client;
 
 namespace GrpcTestKit.TestConnectors.Kubernetes;

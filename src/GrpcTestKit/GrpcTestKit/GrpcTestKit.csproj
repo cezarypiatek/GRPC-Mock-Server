@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Protobuf.System.Text.Json" Version="1.2.0" />
+    <PackageReference Include="SmoothSailing" Version="1.0.0" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.2" />
     <PackageReference Include="Testcontainers" Version="3.1.0" />
     <PackageReference Include="WireMock.Net.Abstractions" Version="1.5.25" />
@@ -19,8 +20,5 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\TestCharts\TestHelmCharts.csproj" />
   </ItemGroup>
 </Project>
