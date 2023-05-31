@@ -8,7 +8,7 @@ on:
     #   - '!src/.editorconfig'
 jobs:
   build-extension:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     env: 
         DOTNET_NOLOGO: true
         DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -16,7 +16,7 @@ jobs:
         RepositoryBranch: '${{ github.ref }}'
         SourceRevisionId: '${{ github.sha }}'        
         Configuration: Release
-        SolutionPath: src\GrpcTestKit\GrpcTestKit.sln
+        SolutionPath: ./src/GrpcTestKit/GrpcTestKit.sln
         Deterministic: true
         PackageReleaseNotes: 'https://github.com/${{ github.repository }}/releases'
         ContinuousIntegrationBuild: true
@@ -37,15 +37,18 @@ jobs:
     - name: Restore dependencies
       run: |
         dotnet nuget locals all --clear
-        dotnet restore $env:SolutionPath         
+        dotnet restore $env:SolutionPath
+      shell: pwsh      
     - name: Build extension
       run: dotnet build $env:SolutionPath   
+      shell: pwsh  
     - name: Generate release note
       run: |
         git fetch --prune
         $commitLog = git log "$(git describe --tags --abbrev=0)..HEAD" --pretty=format:"- %s"
         $commitLog = if([string]::IsNullOrWhitespace($commitLog)){git log --pretty=format:"- %s"}else{$commitLog}
         "What's new: `r`n`r`n$([string]::Join("`r`n",$commitLog))" | Out-File release_note.md -Encoding utf8
+      shell: pwsh  
     - name: Create Github Release
       id: create_release
       uses: actions/create-release@v1
@@ -59,7 +62,8 @@ jobs:
         prerelease: false
     - name: Publish extension to Nuget
       run: |
-        dotnet nuget push src\GrpcTestKit\GrpcTestKit\bin\Release\GrpcTestKit.${{ env.Version }}.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+        dotnet nuget push ./src/GrpcTestKit/GrpcTestKit/bin/Release/GrpcTestKit.${{ env.Version }}.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+      shell: pwsh  
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
     - name: Login to Docker Hub
