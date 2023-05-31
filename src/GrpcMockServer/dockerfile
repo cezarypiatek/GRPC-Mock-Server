@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:7.0
 ADD ./ /src
 ADD run.sh /src/run.sh
+RUN chmode +x /src/run.sh
 WORKDIR /src
 # Pre-build project to cache nugets inside the container
 RUN dotnet build
