@@ -34,4 +34,12 @@ jobs:
         dotnet nuget locals all --clear
         dotnet restore $env:SolutionPath 
     - name: Build extension
-      run: dotnet build $env:SolutionPath 
+      run: dotnet build $env:SolutionPath
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Build docker
+      uses: docker/build-push-action@v4
+      with:
+        push: true
+        context: "{{defaultContext}}:src/GrpcMockServer"
+        tags: cezarypiatek/grpc-mock-server:latest,cezarypiatek/grpc-mock-server:${{ env.Version }}
