@@ -5,6 +5,8 @@ using GrpcTestKit.TestConnectors.Kubernetes;
 
 namespace GrpcTestKit.Demo
 {
+    
+    [Explicit]
     public class Tests
     {
         [Test]
@@ -65,10 +67,9 @@ namespace GrpcTestKit.Demo
         [Test]
         public async Task test_with_testcharts()
         {
+            await using var connector = new TestChartGrpcMockServerConnector("protos", grpcPort: 8889);
 
-            await using var connector = new TestChartGrpcMockServerConnector("protos");
-
-            await connector.Install();
+            var connectionInfo = await connector.Install();
 
             var grpcMockClient = connector.CreateClient();
 

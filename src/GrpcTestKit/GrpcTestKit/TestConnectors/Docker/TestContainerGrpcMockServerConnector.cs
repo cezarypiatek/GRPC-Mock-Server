@@ -13,6 +13,7 @@ public class TestContainerGrpcMockServerConnector : IGrpcMockServerConnector
     private readonly string _dockerImage;
     private readonly int _grpcPort;
     private IContainer? container;
+    private string? _stubbingUrl;
 
     public TestContainerGrpcMockServerConnector(string protoDirectory, int grpcPort = 5033, string dockerImage = "cezarypiatek/grpc-mock-server")
     {
@@ -29,7 +30,7 @@ public class TestContainerGrpcMockServerConnector : IGrpcMockServerConnector
         _grpcPort = grpcPort;
     }
 
-    public async Task Install()
+    public async Task<GrpcMockServerConnectionInfo> Install()
     {
         container = new ContainerBuilder()
             .WithImage(_dockerImage)
@@ -43,27 +44,27 @@ public class TestContainerGrpcMockServerConnector : IGrpcMockServerConnector
             .WithBindMount(_protoDirectory, "/protos")
             .WithAutoRemove(true)
             .WithCleanUp(false)
-
             .Build();
         var st = Stopwatch.StartNew();
         await container.StartAsync();
         st.Stop();
         Console.WriteLine($"Container startup time: {st.Elapsed}");
+        
+        var wireMockPort = container.GetMappedPublicPort("9095");
+        this._stubbingUrl = $"http://localhost:{wireMockPort}";
+        return new GrpcMockServerConnectionInfo($"http://localhost:{_grpcPort}", _stubbingUrl);
     }
 
     public IGrpcMockClient CreateClient()
     {
-        if (container == null)
+        if (_stubbingUrl == null)
         {
             throw new InvalidOperationException("Connector not installed. Call Install() method first.");
         }
 
-        var wireMockPort = container.GetMappedPublicPort("9095");
-        var baseUrl = $"http://localhost:{wireMockPort}";
-        var wireMockApiClient = RestClient.For<IWireMockAdminApi>(baseUrl);
-        return new GrpcMockClient(wireMockApiClient, baseUrl);
+        var wireMockApiClient = RestClient.For<IWireMockAdminApi>(_stubbingUrl);
+        return new GrpcMockClient(wireMockApiClient, _stubbingUrl);
     }
-
 
 
     public async ValueTask DisposeAsync()

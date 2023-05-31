@@ -1,7 +1,7 @@
 namespace GrpcTestKit.TestConnectors;
 
-public interface IGrpcMockServerConnector: System.IAsyncDisposable
+public interface IGrpcMockServerConnector: IAsyncDisposable
 {
-    Task Install();
+    Task<GrpcMockServerConnectionInfo> Install();
     IGrpcMockClient CreateClient();
 }

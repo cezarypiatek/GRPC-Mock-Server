@@ -8,7 +8,7 @@ spec:
       app: {{.Release.Name}}-grpcmockserver
     ports:
     - name: grpcport
-      port: 5033
+      port: {{ .Values.grpcPort | default 5033}}
       targetPort: 5033
       protocol: TCP
     - name: wiremockport
