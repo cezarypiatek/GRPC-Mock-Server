@@ -16,7 +16,7 @@ Ports:
 
 ### Option 2: Using TestContainerGrpcMockServerConnector
 
-`TestContainerGrpcMockServerConnector` uses [Testcontainers for .NET](https://dotnet.testcontainers.org/) to spin docker container directly from the C# code
+`TestContainerGrpcMockServerConnector` uses [Testcontainers for .NET](https://dotnet.testcontainers.org/) to spin docker container directly from the C# code. This options requires docker service running locally.
 
 ```cs
 await using var connector = new TestContainerGrpcMockServerConnector(protoDirectory: "protos", grpcPort:5033);
@@ -26,7 +26,7 @@ await connector.Install();
 
 ### Option 3: Using TestChartGrpcMockServerConnector
 
-`TestChartGrpcMockServerConnector` uses [SmoothSailing](https://github.com/cezarypiatek/SmoothSailing) to deploy GRPC-Mock-Server into Kubernetes cluster directly from the C# code
+`TestChartGrpcMockServerConnector` uses [SmoothSailing](https://github.com/cezarypiatek/SmoothSailing) to deploy GRPC-Mock-Server into Kubernetes cluster directly from the C# code. This option requires `Helm` and `kubectl` to installed on the host machine.
 
 ```cs
 await using var connector = new TestChartGrpcMockServerConnector(protoDirectory: "protos", grpcPort:5033);
@@ -34,6 +34,13 @@ await using var connector = new TestChartGrpcMockServerConnector(protoDirectory:
 await connector.Install();
 ```
 
+[![NuGet](https://img.shields.io/nuget/vpre/GrpcTestKit.svg)](https://www.nuget.org/packages/GrpcTestKit/)
+
+All C# components required for `Option 2` and `Option 3` are provided by [GrpcTestKit nuget package](https://www.nuget.org/packages/GrpcTestKit/) .
+
+```
+dotnet add package GrpcTestKit
+```
 
 
 ## How to prepare mocks
