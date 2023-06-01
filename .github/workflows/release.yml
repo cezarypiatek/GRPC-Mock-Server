@@ -9,46 +9,50 @@ on:
 jobs:
   build-extension:
     runs-on: ubuntu-latest
-    env: 
+    env:
         DOTNET_NOLOGO: true
         DOTNET_CLI_TELEMETRY_OPTOUT: true
         RepositoryUrl: 'https://github.com/${{ github.repository }}'
         RepositoryBranch: '${{ github.ref }}'
-        SourceRevisionId: '${{ github.sha }}'        
+        SourceRevisionId: '${{ github.sha }}'
         Configuration: Release
         SolutionPath: ./src/GrpcTestKit/GrpcTestKit.sln
+        SolutionPath1: ./src/GrpcMockServer/GrpcMocking.sln
         Deterministic: true
         PackageReleaseNotes: 'https://github.com/${{ github.repository }}/releases'
         ContinuousIntegrationBuild: true
         Authors: 'Cezary Piątek'
         PackageLicenseExpression: 'MIT'
     steps:
-    - uses: actions/checkout@v2   
+    - uses: actions/checkout@v2
     - name: Setup .NET Core 7
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '7.0'   
+        dotnet-version: '7.0'
     - name: Calculate next version
       uses: cezarypiatek/NextVersionGeneratorAction@0.4
       with:
         minor-pattern: '.*'
         major-pattern: 'BREAKING CHANGES'
-        output-to-env-variable: 'Version'    
+        output-to-env-variable: 'Version'
     - name: Restore dependencies
       run: |
         dotnet nuget locals all --clear
         dotnet restore $env:SolutionPath
-      shell: pwsh      
+        dotnet restore $env:SolutionPath1
+      shell: pwsh
     - name: Build extension
-      run: dotnet build $env:SolutionPath   
-      shell: pwsh  
+      run: |
+        dotnet build $env:SolutionPath
+        dotnet build $env:SolutionPath1
+      shell: pwsh
     - name: Generate release note
       run: |
         git fetch --prune
         $commitLog = git log "$(git describe --tags --abbrev=0)..HEAD" --pretty=format:"- %s"
         $commitLog = if([string]::IsNullOrWhitespace($commitLog)){git log --pretty=format:"- %s"}else{$commitLog}
         "What's new: `r`n`r`n$([string]::Join("`r`n",$commitLog))" | Out-File release_note.md -Encoding utf8
-      shell: pwsh  
+      shell: pwsh
     - name: Create Github Release
       id: create_release
       uses: actions/create-release@v1
@@ -63,7 +67,8 @@ jobs:
     - name: Publish extension to Nuget
       run: |
         dotnet nuget push ./src/GrpcTestKit/GrpcTestKit/bin/Release/GrpcTestKit.${{ env.Version }}.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
-      shell: pwsh  
+        dotnet nuget push ./src/GrpcMockServer/GrpcToRestGenerator/bin/Release/GrpcTestKit.GrpcMockServerGenerator.${{ env.Version }}.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+      shell: pwsh
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
     - name: Login to Docker Hub

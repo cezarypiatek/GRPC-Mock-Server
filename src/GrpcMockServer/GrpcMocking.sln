@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcMockServer", "GrpcMockServer\GrpcMockServer.csproj", "{77058102-386A-49FC-900B-4262BC78EB08}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcToRestGenerator", "GrpcToRestGenerator\GrpcToRestGenerator.csproj", "{79C938EA-7723-441F-B2E9-FB67ACE00650}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcTestKit.GrpcMockServerGenerator", "GrpcToRestGenerator\GrpcTestKit.GrpcMockServerGenerator.csproj", "{79C938EA-7723-441F-B2E9-FB67ACE00650}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

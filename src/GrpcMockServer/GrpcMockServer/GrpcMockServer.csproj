@@ -10,6 +10,7 @@
     <ProtoRoot Condition=" '$(ProtoRoot)' == '' ">Protos</ProtoRoot>
     <RestoreAdditionalProjectSources Condition="'$(FastTrack)' == 'true'">../GrpcToRestGenerator/bin/$(Configuration)/</RestoreAdditionalProjectSources>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
 
@@ -20,10 +21,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(FastTrack)' == ''">
-    <ProjectReference Include="..\GrpcToRestGenerator\GrpcToRestGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\GrpcToRestGenerator\GrpcTestKit.GrpcMockServerGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup Condition="'$(FastTrack)' == 'true'">
-    <PackageReference Include="GrpcToRestGenerator" Version="1.0.0" />
+    <PackageReference Include="GrpcTestKit.GrpcMockServerGenerator" Version="1.0.0" />
   </ItemGroup>
 
 

@@ -6,7 +6,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 [Generator]
+#pragma warning disable RS1036
 public class GrpcToRestProxyGenerator:IIncrementalGenerator
+#pragma warning restore RS1036
 
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -48,7 +50,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         }
 
         
-        var services = new List<(string,string, string)>();
+        var services = new List<(string?,string?, string?)>();
         foreach (var serviceBaseClass in classes.Distinct())
         {
             
@@ -63,7 +65,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                 }
 
                 var className = $"{typeSymbol.ContainingNamespace.ToString().Replace(".","")}{ serviceName }GrpcToRestProxy";
-                var proxyNamespace = compilation.AssemblyName;
+                var proxyNamespace = "GrpcTestKit";
                 services.Add((className, proxyNamespace, protoServiceName));
                 var sb = new StringBuilder();
                 {
@@ -112,7 +114,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                             if (methodSymbol.Parameters.Length == 2 && methodSymbol.Parameters[0].Name == "requestStream")
                             {
                                 //client stream
-                                sb.AppendLine($"        var input = new System.Collections.Generic.List<{((INamedTypeSymbol)methodSymbol.Parameters[0].Type).TypeArguments[0].ToString()}>();");
+                                sb.AppendLine($"        var input = new System.Collections.Generic.List<{((INamedTypeSymbol)methodSymbol.Parameters[0].Type).TypeArguments[0]}>();");
                                 sb.AppendLine($"        await foreach (var item in  requestStream.ReadAllAsync(context.CancellationToken))");
                                 sb.AppendLine("        {");
                                 sb.AppendLine($"            context.CancellationToken.ThrowIfCancellationRequested();");
@@ -125,7 +127,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                                 sb.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
                                 sb.AppendLine($"        result.EnsureSuccessStatusCode();");
                                 sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
-                                sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0].ToString()}>(resultContent, _jsonSerializerOptions)!;");
+                                sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0]}>(resultContent, _jsonSerializerOptions)!;");
 
                             }
                             else if (methodSymbol.Parameters.Length == 2)
@@ -138,7 +140,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                                 sb.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
                                 sb.AppendLine($"        result.EnsureSuccessStatusCode();");
                                 sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
-                                sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0].ToString()}>(resultContent, _jsonSerializerOptions)!;");
+                                sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0]}>(resultContent, _jsonSerializerOptions)!;");
                             }
 
                             if (methodSymbol.Parameters.Length == 3 && methodSymbol.Parameters[0].Name == "requestStream")
@@ -157,7 +159,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
                                 sb.AppendLine($"        result.EnsureSuccessStatusCode();");
                                 sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
 
-                                sb.AppendLine($"        foreach(var item in JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0].ToString()}[]>(resultContent, _jsonSerializerOptions)!)");
+                                sb.AppendLine($"        foreach(var item in JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0]}[]>(resultContent, _jsonSerializerOptions)!)");
                                 sb.AppendLine("        {");
                                 sb.AppendLine("            context.CancellationToken.ThrowIfCancellationRequested();");
                                 sb.AppendLine($"            await responseStream.WriteAsync(item);");
@@ -178,24 +180,41 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
             }
         }
 
-        var sb1 = new StringBuilder();
-        sb1.AppendLine($"namespace {compilation.AssemblyName};");
-        sb1.AppendLine("");
-        sb1.AppendLine("public static partial class GrpcToRestProxyExtensions");
-        sb1.AppendLine("{");
-        sb1.AppendLine("    static partial void MapAllProxies(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder)");
-        sb1.AppendLine("    {");
-        sb1.AppendLine("        System.Console.WriteLine(\"Registered GRPC-To-Rest proxies:\");");
+        // var sb1 = new StringBuilder();
+        // sb1.AppendLine($"namespace {compilation.AssemblyName};");
+        // sb1.AppendLine("");
+        // sb1.AppendLine("public static partial class GrpcToRestProxyExtensions");
+        // sb1.AppendLine("{");
+        // sb1.AppendLine("    static partial void MapAllProxies(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder builder)");
+        // sb1.AppendLine("    {");
+        // sb1.AppendLine("        System.Console.WriteLine(\"Registered GRPC-To-Rest proxies:\");");
+        // foreach (var service in services)
+        // {
+        //     var (dotnetName, proxyNamespace, protoName) = service;
+        //     sb1.Append($"        System.Console.WriteLine(\"\t* {protoName}\");");
+        //     sb1.AppendLine($"        builder.MapGrpcService<{proxyNamespace}.{dotnetName}>();");
+        // }
+        // sb1.AppendLine("    }");
+        // sb1.AppendLine("}");
+        //
+        // context.AddSource($"GrpcToRestProxyExtensions.g.cs", SourceText.From(sb1.ToString(), Encoding.UTF8));
+        
+         var sb1 = new StringBuilder();
         foreach (var service in services)
         {
             var (dotnetName, proxyNamespace, protoName) = service;
-            sb1.Append($"        System.Console.WriteLine(\"\t* {protoName}\");");
-            sb1.AppendLine($"        builder.MapGrpcService<{proxyNamespace}.{dotnetName}>();");
+            sb1.AppendLine($"        System.Console.WriteLine(\"\t* {protoName}\");");
+            sb1.AppendLine($"       app.MapGrpcService<{proxyNamespace}.{dotnetName}>();");
         }
-        sb1.AppendLine("    }");
-        sb1.AppendLine("}");
 
-        context.AddSource($"GrpcToRestProxyExtensions.g.cs", SourceText.From(sb1.ToString(), Encoding.UTF8));
+      
+        using (Stream stream =   typeof( GrpcToRestProxyGenerator).Assembly.GetManifestResourceStream("GrpcTestKit.GrpcMockServerGenerator.GrpcMockServer.cs")!)
+        using (StreamReader reader = new StreamReader(stream))
+        {
+            string result = reader.ReadToEnd();
+            var mainContent = result.Replace("//REPLACE:MapGrpcToRestProxies", sb1.ToString());
+            context.AddSource($"GrpcMockServer.g.cs", SourceText.From(mainContent, Encoding.UTF8));
+        }
     }
 
     private static void RelayHeaders(StringBuilder sb)
