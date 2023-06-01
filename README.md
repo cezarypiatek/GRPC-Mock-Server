@@ -42,6 +42,33 @@ All C# components required for `Option 2` and `Option 3` are provided by [GrpcTe
 dotnet add package GrpcTestKit
 ```
 
+### Option 4: Using source generator
+
+1. Add the following nuget package references
+
+```xml
+<ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.53.0" />
+    <PackageReference Include="Protobuf.System.Text.Json" Version="1.2.0" />
+    <PackageReference Include="WireMock.Net" Version="1.5.25" />
+    <PackageReference Include="GrpcTestKit.GrpcMockServerGenerator" Version="1.13.0" />
+</ItemGroup>
+```
+
+2. Include your proto files
+```xml
+<ItemGroup>
+    <Protobuf Include="protos\**\*.proto" ProtoRoot="protos" GrpcServices="Server" />
+</ItemGroup>
+```
+
+3. Use geneated `GrpcMockService`
+
+```cs
+await using var mockServer = new GrpcTestKit.GrpcMockServer();
+mockServer.Start(grpcPort: 5033, wireMockPort: 9096);
+```
+
 
 ## How to prepare mocks
 
@@ -113,7 +140,7 @@ GRPC-Mock-Server works in the following way:
 
 ## TODO
 - [ ] Implement error response codes
-- [ ] Publish source generator as nuget package to allow for hosting GRPC-Mock-Server in-process
+- [x] Publish source generator as nuget package to allow for hosting GRPC-Mock-Server in-process
 - [x] Implement library that wraps WireMock API for stubbing
 - [x] Implement test container
 
