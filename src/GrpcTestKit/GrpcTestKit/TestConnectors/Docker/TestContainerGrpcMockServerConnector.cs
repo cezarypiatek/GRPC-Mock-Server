@@ -62,10 +62,8 @@ public class TestContainerGrpcMockServerConnector : IGrpcMockServerConnector
             throw new InvalidOperationException("Connector not installed. Call Install() method first.");
         }
 
-        var wireMockApiClient = RestClient.For<IWireMockAdminApi>(_stubbingUrl);
-        return new GrpcMockClient(wireMockApiClient, _stubbingUrl);
+        return GrpcMockClient.FromWireMockUrl(_stubbingUrl);
     }
-
 
     public async ValueTask DisposeAsync()
     {

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using RestEase;
 using WireMock.Admin.Mappings;
 using WireMock.Client;
 using WireMock.Net.Extensions.WireMockInspector;
@@ -30,4 +31,10 @@ public class GrpcMockClient : IGrpcMockClient
     public void Inspect([CallerMemberName] string title = "") => WireMockServerExtensions.Inspect(_adminUrl, title);
 
     public ValueTask DisposeAsync() => default;
+    
+    public static IGrpcMockClient FromWireMockUrl(string stubbingUrl)
+    {
+        var wireMockApiClient = RestClient.For<IWireMockAdminApi>(stubbingUrl);
+        return new GrpcMockClient(wireMockApiClient, stubbingUrl);
+    }
 }
