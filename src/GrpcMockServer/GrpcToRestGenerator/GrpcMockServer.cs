@@ -1,5 +1,7 @@
 ﻿#nullable enable
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -44,7 +46,7 @@ public class GrpcMockServer: IAsyncDisposable
         _wireMock = WireMockServer.StartWithAdminInterface(port: wireMockPort);
 
         this._cancellationTokenSource = new CancellationTokenSource();
-        ServerTask = app.RunAsync();
+        ServerTask = app.RunAsync(this._cancellationTokenSource.Token);
         Console.WriteLine("GRPC-Mock-Server is ready");
         return ServerTask;
     }
