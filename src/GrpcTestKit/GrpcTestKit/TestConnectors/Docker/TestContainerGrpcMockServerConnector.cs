@@ -49,7 +49,9 @@ public class TestContainerGrpcMockServerConnector : IGrpcMockServerConnector
         await container.StartAsync();
         st.Stop();
         Console.WriteLine($"Container startup time: {st.Elapsed}");
-        
+        CancellationTokenSource cts;
+        cts.T
+            
         var wireMockPort = container.GetMappedPublicPort("9095");
         this._stubbingUrl = $"http://localhost:{wireMockPort}";
         return new GrpcMockServerConnectionInfo($"http://localhost:{_grpcPort}", _stubbingUrl);
