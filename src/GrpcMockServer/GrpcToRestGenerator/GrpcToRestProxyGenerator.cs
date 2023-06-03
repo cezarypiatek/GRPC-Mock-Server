@@ -17,22 +17,19 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
             .CreateSyntaxProvider(
                 predicate: static (s, _) =>
                 {
-                    //if (s is AttributeSyntax {Name:IdentifierNameSyntax{Identifier:{Text: "GrpcMockServerFor"}}, ArgumentList.Arguments.Count: > 0}  attribute)
-                    //{
-                    //    if(attribute.ArgumentList.Arguments[0].Expression is TypeOfExpressionSyntax {Type: {} typeSyntax})
-                    //    {
-                    //        return true;
-                    //    }
-                    //}
-
                     if (s is ClassDeclarationSyntax c)
                     {
                         if (c.Modifiers.Count(m => m.Kind() is SyntaxKind.AbstractKeyword or SyntaxKind.PartialKeyword or SyntaxKind.PublicKeyword) == 3)
                         {
-                            if (c.AttributeLists.SelectMany(x => x.Attributes).Any(x => x.Name.ToString().Contains("BindServiceMethod")))
+                            if (HasAttribute(c, "BindServiceMethod"))
                             {
                                 return true;
                             }
+                        }
+
+                        if (HasAttribute(c, "GrpcMockServerFor"))
+                        {
+                            return true;
                         }
                     }
 
@@ -47,7 +44,17 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
 
 
     }
-    
+
+    private static bool HasAttribute(ClassDeclarationSyntax c, string attributeName)
+    {
+        if (c is {AttributeLists.Count: > 0})
+        {
+            return c.AttributeLists.SelectMany(x => x.Attributes).Any(x => x?.Name.ToString().Contains(attributeName) == true);
+        }
+
+        return false;
+    }
+
 
     private static void Execute(Compilation compilation, ImmutableArray<SyntaxNode> classes, SourceProductionContext context)
     {
@@ -57,14 +64,37 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
             return;
         }
 
-        var baseTypes = classes.OfType<ClassDeclarationSyntax>().Distinct().Select(el =>
+        var baseTypesForGlobalMock = classes.OfType<ClassDeclarationSyntax>().Where(x=> HasAttribute(x, "BindServiceMethod")) .Distinct().Select(el =>
         {
             var semanticModel = compilation.GetSemanticModel(el.SyntaxTree);
             return semanticModel.GetDeclaredSymbol(el);
         }).OfType<INamedTypeSymbol>().ToList();
 
-        var b = new ProxyBuilder("GrpcTestKit", "GrpcMockServer");
-        var output = b.Build(baseTypes);
-        context.AddSource($"GrpcMockServer.g.cs", SourceText.From(output, Encoding.UTF8));
+        if (baseTypesForGlobalMock.Count > 0)
+        {
+            var b = new ProxyBuilder("GrpcTestKit", "GrpcMockServer");
+            var output = b.Build(baseTypesForGlobalMock);
+            context.AddSource($"GrpcMockServer.g.cs", SourceText.From(output, Encoding.UTF8));
+        }
+
+        foreach (var specific in classes.OfType<ClassDeclarationSyntax>().Where(x => HasAttribute(x,"GrpcMockServerFor")))
+        {
+            var semanticModel = compilation.GetSemanticModel(specific.SyntaxTree);
+
+            var generatorType = semanticModel.GetDeclaredSymbol(specific);
+            if (generatorType != null)
+            {
+                var symbols = specific.AttributeLists.SelectMany(x => x.Attributes)
+                    .Where(x => x?.Name.ToString().Contains("GrpcMockServerFor") == true).Select(x =>
+                        x.ArgumentList?.Arguments.FirstOrDefault()?.Expression as TypeOfExpressionSyntax).OfType<TypeOfExpressionSyntax>()
+                    .Select(x => semanticModel.GetSymbolInfo(x.Type).Symbol)
+                    .OfType<INamedTypeSymbol>()
+                    .ToList();
+
+                var b = new ProxyBuilder(generatorType.ContainingNamespace.ToDisplayString(), generatorType.Name);
+                var output = b.Build(symbols);
+                context.AddSource($"{generatorType.Name}.g.cs", SourceText.From(output, Encoding.UTF8));
+            }
+        }
     }
 }
