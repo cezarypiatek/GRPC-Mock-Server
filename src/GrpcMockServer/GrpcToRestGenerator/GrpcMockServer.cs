@@ -14,9 +14,9 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace GrpcTestKit;
+namespace /*MockServerNamespace*/;
 
-public class GrpcMockServer: IAsyncDisposable
+public partial class /*MockServerName*/: IAsyncDisposable
 {
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? ServerTask { get; set; }
