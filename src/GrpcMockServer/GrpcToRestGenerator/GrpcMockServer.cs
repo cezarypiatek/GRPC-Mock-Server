@@ -15,7 +15,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
 
-namespace /*MockServerNamespace*/;
+/*MockServerNamespace*/
 
 public partial class /*MockServerName*/: IAsyncDisposable
 {
