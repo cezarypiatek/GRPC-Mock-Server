@@ -36,12 +36,26 @@ public class ProxyBuilder
                     proxyBuiler.AppendLine("");
                     proxyBuiler.AppendLine($"public class {className} : {typeSymbol.ToDisplayString()}");
                     proxyBuiler.AppendLine("{");
+                    proxyBuiler.AppendLine($@"
+
+    public static IReadOnlyCollection<string> GetServices()
+    {{
+        var impl = new {className}(null!);
+        var infoBinder = new InfoBinder();
+        {typeSymbol.ContainingType.ToDisplayString()}.BindService(infoBinder, impl);
+        return infoBinder.Services;
+    }}
+
+");
+
+
+
                     proxyBuiler.AppendLine("   readonly HttpClient _httpClient;");
                     proxyBuiler.AppendLine("   readonly JsonSerializerOptions _jsonSerializerOptions;");
                     proxyBuiler.AppendLine("");
                     proxyBuiler.AppendLine($"   public {className}(IHttpClientFactory factory)");
                     proxyBuiler.AppendLine("   {");
-                    proxyBuiler.AppendLine($"      _httpClient = factory.CreateClient(\"WireMock\");");
+                    proxyBuiler.AppendLine($"      _httpClient = factory?.CreateClient(\"WireMock\")!;");
                     proxyBuiler.AppendLine("      _jsonSerializerOptions = new JsonSerializerOptions();");
                     proxyBuiler.AppendLine("      _jsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;");
                     proxyBuiler.AppendLine("      _jsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;");
@@ -126,12 +140,18 @@ public class ProxyBuilder
         }
 
         var sb1 = new StringBuilder();
+        
+        foreach (var service in services) {
+            
+            sb1.AppendLine($"       app.MapGrpcService<{service}>();");
+        }
+
         sb1.AppendLine($"       System.Console.WriteLine(\"GRPC-Mock-Server generated for the following services:\");");
         foreach (var service in services)
         {
-            sb1.AppendLine($"       System.Console.WriteLine(\"\t* {service}\");");
-            sb1.AppendLine($"       app.MapGrpcService<{service}>();");
+            sb1.AppendLine($"       System.Console.WriteLine(string.Join(\"\\r\\n\", {service}.GetServices().Select(x=> $\"\\t* {{x}} \")));");
         }
+        
 
 
         using (Stream stream = typeof(GrpcToRestProxyGenerator).Assembly.GetManifestResourceStream("GrpcTestKit.GrpcMockServerGenerator.GrpcMockServer.cs")!)
