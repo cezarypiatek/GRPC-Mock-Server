@@ -21,6 +21,11 @@ public class GrpcMockServerForAttribute:Attribute
     {
     }
 }
+
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public class GrpcMockServerForAutoDiscoveredSourceServicesAttribute:Attribute
+{    
+}
 ";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -35,15 +40,15 @@ public class GrpcMockServerForAttribute:Attribute
                 {
                     if (s is ClassDeclarationSyntax c)
                     {
-                        if (c.Modifiers.Count(m => m.Kind() is SyntaxKind.AbstractKeyword or SyntaxKind.PartialKeyword or SyntaxKind.PublicKeyword) == 3)
+                        if (HasAttribute(c, "BindServiceMethod"))
                         {
-                            if (HasAttribute(c, "BindServiceMethod"))
-                            {
-                                return true;
-                            }
+                            return true;
                         }
-
-                        if (HasAttribute(c, "GrpcMockServerFor"))
+                        else if (HasAttribute(c, "GrpcMockServerFor"))
+                        {
+                            return true;
+                        }
+                        else if (HasAttribute(c, "GrpcMockServerForAutoDiscoveredSourceServices"))
                         {
                             return true;
                         }
@@ -80,18 +85,11 @@ public class GrpcMockServerForAttribute:Attribute
             return;
         }
 
-        var baseTypesForGlobalMock = classes.OfType<ClassDeclarationSyntax>().Where(x=> HasAttribute(x, "BindServiceMethod")) .Distinct().Select(el =>
+        var autoDiscoveredServiceTypes = classes.OfType<ClassDeclarationSyntax>().Where(x=> HasAttribute(x, "BindServiceMethod")) .Distinct().Select(el =>
         {
             var semanticModel = compilation.GetSemanticModel(el.SyntaxTree);
             return semanticModel.GetDeclaredSymbol(el);
         }).OfType<INamedTypeSymbol>().ToList();
-
-        if (baseTypesForGlobalMock.Count > 0)
-        {
-            var b = new ProxyBuilder("GrpcTestKit", "GrpcMockServer");
-            var output = b.Build(baseTypesForGlobalMock);
-            context.AddSource($"GrpcMockServer.g.cs", SourceText.From(output, Encoding.UTF8));
-        }
 
         foreach (var specific in classes.OfType<ClassDeclarationSyntax>().Where(x => HasAttribute(x,"GrpcMockServerFor")))
         {
@@ -104,11 +102,17 @@ public class GrpcMockServerForAttribute:Attribute
                     .Where(x => x?.Name.ToString().Contains("GrpcMockServerFor") == true).Select(x =>
                         x.ArgumentList?.Arguments.FirstOrDefault()?.Expression as TypeOfExpressionSyntax).OfType<TypeOfExpressionSyntax>()
                     .Select(x => semanticModel.GetSymbolInfo(x.Type).Symbol)
-                    .OfType<INamedTypeSymbol>()
-                    .ToList();
+                    .OfType<INamedTypeSymbol>();
+
+                if (HasAttribute(specific, "GrpcMockServerForAutoDiscoveredSourceServices"))
+                {
+#pragma warning disable RS1024
+                    symbols = symbols.Concat(autoDiscoveredServiceTypes).Distinct();
+#pragma warning restore RS1024
+                }
 
                 var b = new ProxyBuilder(generatorType.ContainingNamespace.ToDisplayString(), generatorType.Name);
-                var output = b.Build(symbols);
+                var output = b.Build(symbols.ToList());
                 context.AddSource($"{generatorType.Name}.g.cs", SourceText.From(output, Encoding.UTF8));
             }
         }

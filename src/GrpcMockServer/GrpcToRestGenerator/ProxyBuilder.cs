@@ -160,7 +160,7 @@ public class ProxyBuilder
             string result = reader.ReadToEnd();
             var mainContent = result.Replace("//REPLACE:RegisterProxy", sb1.ToString())
                 .Replace("//REPLACE:ProxyDefinition", proxyBuiler.ToString())
-                .Replace("/*MockServerNamespace*/", _mockServerNamespace)
+                .Replace("/*MockServerNamespace*/", string.IsNullOrWhiteSpace(_mockServerNamespace) || _mockServerNamespace == "<global namespace>" ? "":$"namespace {_mockServerNamespace};")
                 .Replace("/*MockServerName*/", _mockServerTypeName)
                 ;
             return mainContent;

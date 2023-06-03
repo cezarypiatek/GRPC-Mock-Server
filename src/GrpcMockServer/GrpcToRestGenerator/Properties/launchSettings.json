@@ -1,11 +1,12 @@
 {
   "profiles": {
-    "ClassLibrary1": {
-      "commandName": "Project"
-    },
     "Debug generator": {
       "commandName": "DebugRoslynComponent",
       "targetProject": "..\\GrpcMockServer\\GrpcMockServer.csproj"
+    },
+    "ForAttribute": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\TestForProtoFromAssembly\\TestForProtoFromAssembly.csproj"
     }
   }
 }
