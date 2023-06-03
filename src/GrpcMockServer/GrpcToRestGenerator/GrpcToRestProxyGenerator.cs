@@ -11,8 +11,24 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
 #pragma warning restore RS1036
 
 {
+
+    public const string GeneratorAttribute = @"
+
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+public class GrpcMockServerForAttribute:Attribute
+{
+    public GrpcMockServerForAttribute(Type serviceType)
+    {
+    }
+}
+";
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        context.RegisterPostInitializationOutput(ctx => ctx.AddSource(
+            "GrpcMockServerForAttribute.g.cs",
+            SourceText.From(GeneratorAttribute, Encoding.UTF8)));
+
         var classDeclarations = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (s, _) =>
