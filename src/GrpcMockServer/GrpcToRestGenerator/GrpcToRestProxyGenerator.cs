@@ -17,6 +17,14 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
             .CreateSyntaxProvider(
                 predicate: static (s, _) =>
                 {
+                    //if (s is AttributeSyntax {Name:IdentifierNameSyntax{Identifier:{Text: "GrpcMockServerFor"}}, ArgumentList.Arguments.Count: > 0}  attribute)
+                    //{
+                    //    if(attribute.ArgumentList.Arguments[0].Expression is TypeOfExpressionSyntax {Type: {} typeSyntax})
+                    //    {
+                    //        return true;
+                    //    }
+                    //}
+
                     if (s is ClassDeclarationSyntax c)
                     {
                         if (c.Modifiers.Count(m => m.Kind() is SyntaxKind.AbstractKeyword or SyntaxKind.PartialKeyword or SyntaxKind.PublicKeyword) == 3)
@@ -30,10 +38,10 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
 
                     return false;
                 },
-                transform: static (ctx, _) => GetProxyClass(ctx))
+                transform: static (ctx, _) => ctx.Node)
             .Where(static m => m is not null);
 
-        IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses = context.CompilationProvider.Combine(classDeclarations.Collect());
+        IncrementalValueProvider<(Compilation, ImmutableArray<SyntaxNode>)> compilationAndClasses = context.CompilationProvider.Combine(classDeclarations.Collect());
         context.RegisterSourceOutput(compilationAndClasses,
             static (spc, source) => Execute(source.Item1, source.Item2, spc));
 
@@ -41,7 +49,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
     }
     
 
-    private static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> classes, SourceProductionContext context)
+    private static void Execute(Compilation compilation, ImmutableArray<SyntaxNode> classes, SourceProductionContext context)
     {
         if (classes.IsDefaultOrEmpty)
         {
@@ -49,125 +57,143 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
             return;
         }
 
-        
-        var services = new List<(string?,string?, string?)>();
-        foreach (var serviceBaseClass in classes.Distinct())
+        var proxyBuiler = new StringBuilder();
+        var services = new List<string>();
+        foreach (var el in classes.Distinct())
         {
-            
-            var semanticModel = compilation.GetSemanticModel(serviceBaseClass.SyntaxTree);
+            var semanticModel = compilation.GetSemanticModel(el.SyntaxTree);
+            if (el is not ClassDeclarationSyntax serviceBaseClass)
+            {
+                //if (el is AttributeSyntax { Name: IdentifierNameSyntax { Identifier: { Text: "GrpcMockServerFor" } }, ArgumentList.Arguments.Count: > 0 } attribute)
+                //{
+                //    if (attribute.ArgumentList.Arguments[0].Expression is TypeOfExpressionSyntax { Type: { } typeSyntax })
+                //    {
+                //        var ll = semanticModel.GetSymbolInfo(typeSyntax);
+                //        if (ll.Symbol is INamedTypeSymbol nt)
+                //        {
+                //            foreach (var member in nt.GetMembers())
+                //            {
+                //                if (member is IMethodSymbol method)
+                //                {
+                //                    var display = method.ToMinimalDisplayString(semanticModel,0, SymbolDisplayFormat.CSharpErrorMessageFormat);
+                //                }
+                //            }
+
+                //            if (nt.ContainingSymbol is INamedTypeSymbol parent)
+                //            {
+
+
+                                
+                //                var parentMebers = parent.GetMembers();
+                //            }
+
+                //            var members = nt.GetMembers();
+                //        }
+                //    }
+                //}
+
+                continue;
+            }
+
+           
+
+            //var semanticModel = compilation.GetSemanticModel(serviceBaseClass.SyntaxTree);
             if (semanticModel.GetDeclaredSymbol(serviceBaseClass) is ITypeSymbol typeSymbol)
             {
                 var serviceName = typeSymbol.Name.Substring(0, typeSymbol.Name.Length - 4);
-                var protoServiceName = serviceName;
-                if (serviceBaseClass.Parent is ClassDeclarationSyntax parentTypeSyntax && parentTypeSyntax.Members.OfType<FieldDeclarationSyntax>().SelectMany(x=>x.Declaration.Variables).FirstOrDefault(x=>x.Identifier.ValueText == "__ServiceName") is {} serviceNameField)
-                {
-                    protoServiceName = serviceNameField.Initializer?.Value.ToFullString().Trim('"');
-                }
-
                 var className = $"{typeSymbol.ContainingNamespace.ToString().Replace(".","")}{ serviceName }GrpcToRestProxy";
-                var proxyNamespace = "GrpcTestKit";
-                services.Add((className, proxyNamespace, protoServiceName));
-                var sb = new StringBuilder();
+                services.Add(className);
+               
                 {
-                    sb.AppendLine("#pragma warning disable CS8981 ");
-                    sb.AppendLine("#pragma warning disable CS1998 ");
-                    sb.AppendLine("using grpc = global::Grpc.Core;");
-                    sb.AppendLine("using Grpc.Core;");
-                    sb.AppendLine("using System.Net.Http;");
-                    sb.AppendLine("using System.Text.Json;");
-                    sb.AppendLine("using System.Text.Json.Serialization;");
-                    sb.AppendLine("");
-                    sb.AppendLine($"namespace {proxyNamespace};");
-                    sb.AppendLine("");
-                    sb.AppendLine($"public class {className} : {typeSymbol.ToDisplayString()}");
-                    sb.AppendLine("{");
-                    sb.AppendLine("   readonly HttpClient _httpClient;");
-                    sb.AppendLine("   readonly JsonSerializerOptions _jsonSerializerOptions;");
-                    sb.AppendLine("");
-                    sb.AppendLine($"   public {className}(IHttpClientFactory factory)");
-                    sb.AppendLine("   {");
-                    sb.AppendLine($"      _httpClient = factory.CreateClient(\"WireMock\");");
-                    sb.AppendLine("      _jsonSerializerOptions = new JsonSerializerOptions();");
-                    sb.AppendLine("      _jsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;");
-                    sb.AppendLine("      _jsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;");
-                    sb.AppendLine("      _jsonSerializerOptions.AddProtobufSupport();");
-                    sb.AppendLine("   }");
-                    sb.AppendLine("");
+                    proxyBuiler.AppendLine("");
+                    proxyBuiler.AppendLine($"public class {className} : {typeSymbol.ToDisplayString()}");
+                    proxyBuiler.AppendLine("{");
+                    proxyBuiler.AppendLine("   readonly HttpClient _httpClient;");
+                    proxyBuiler.AppendLine("   readonly JsonSerializerOptions _jsonSerializerOptions;");
+                    proxyBuiler.AppendLine("");
+                    proxyBuiler.AppendLine($"   public {className}(IHttpClientFactory factory)");
+                    proxyBuiler.AppendLine("   {");
+                    proxyBuiler.AppendLine($"      _httpClient = factory.CreateClient(\"WireMock\");");
+                    proxyBuiler.AppendLine("      _jsonSerializerOptions = new JsonSerializerOptions();");
+                    proxyBuiler.AppendLine("      _jsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;");
+                    proxyBuiler.AppendLine("      _jsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;");
+                    proxyBuiler.AppendLine("      _jsonSerializerOptions.AddProtobufSupport();");
+                    proxyBuiler.AppendLine("   }");
+                    proxyBuiler.AppendLine("");
 
-                    //foreach (var methodDeclarationSyntax in serviceBaseClass.Members.OfType<MethodDeclarationSyntax>())
                     foreach (var methodSymbol in typeSymbol.GetMembers().OfType<IMethodSymbol>().Where(x=>x.IsVirtual))
                     {
 
-                        sb.AppendLine($"   public override async {methodSymbol.ReturnType} {methodSymbol.Name}({string.Join(", ", methodSymbol.Parameters.Select(x => $"{x.Type} {x.Name}"))})");
-                        sb.AppendLine("   {");
+                        proxyBuiler.AppendLine($"   public override async {methodSymbol.ReturnType} {methodSymbol.Name}({string.Join(", ", methodSymbol.Parameters.Select(x => $"{x.Type} {x.Name}"))})");
+                        proxyBuiler.AppendLine("   {");
 
 
 
                         if (methodSymbol.Parameters.Length == 2 && methodSymbol.Parameters[0].Name == "requestStream")
                         {
                             //client stream
-                            sb.AppendLine($"        var input = new System.Collections.Generic.List<{((INamedTypeSymbol) methodSymbol.Parameters[0].Type).TypeArguments[0]}>();");
-                            sb.AppendLine($"        await foreach (var item in  requestStream.ReadAllAsync(context.CancellationToken))");
-                            sb.AppendLine("        {");
-                            sb.AppendLine($"            context.CancellationToken.ThrowIfCancellationRequested();");
-                            sb.AppendLine($"            input.Add(item);");
-                            sb.AppendLine("        }");
-                            sb.AppendLine($"        var payload = JsonSerializer.Serialize(input, options: _jsonSerializerOptions);");
-                            sb.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, context.Method);");
-                            sb.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
-                            RelayHeaders(sb);
-                            sb.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
-                            sb.AppendLine($"        result.EnsureSuccessStatusCode();");
-                            sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
-                            sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol) methodSymbol.ReturnType).TypeArguments[0]}>(resultContent, _jsonSerializerOptions)!;");
+                            proxyBuiler.AppendLine($"        var input = new System.Collections.Generic.List<{((INamedTypeSymbol) methodSymbol.Parameters[0].Type).TypeArguments[0]}>();");
+                            proxyBuiler.AppendLine($"        await foreach (var item in  requestStream.ReadAllAsync(context.CancellationToken))");
+                            proxyBuiler.AppendLine("        {");
+                            proxyBuiler.AppendLine($"            context.CancellationToken.ThrowIfCancellationRequested();");
+                            proxyBuiler.AppendLine($"            input.Add(item);");
+                            proxyBuiler.AppendLine("        }");
+                            proxyBuiler.AppendLine($"        var payload = JsonSerializer.Serialize(input, options: _jsonSerializerOptions);");
+                            proxyBuiler.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, context.Method);");
+                            proxyBuiler.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
+                            RelayHeaders(proxyBuiler);
+                            proxyBuiler.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
+                            proxyBuiler.AppendLine($"        result.EnsureSuccessStatusCode();");
+                            proxyBuiler.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
+                            proxyBuiler.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol) methodSymbol.ReturnType).TypeArguments[0]}>(resultContent, _jsonSerializerOptions)!;");
 
                         }
                         else if (methodSymbol.Parameters.Length == 2)
                         {
                             //request-reply
-                            sb.AppendLine($"        var payload = JsonSerializer.Serialize({methodSymbol.Parameters[0].Name}, options: _jsonSerializerOptions);");
-                            sb.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, context.Method);");
-                            sb.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
-                            RelayHeaders(sb);
-                            sb.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
-                            sb.AppendLine($"        result.EnsureSuccessStatusCode();");
-                            sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
-                            sb.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol) methodSymbol.ReturnType).TypeArguments[0]}>(resultContent, _jsonSerializerOptions)!;");
+                            proxyBuiler.AppendLine($"        var payload = JsonSerializer.Serialize({methodSymbol.Parameters[0].Name}, options: _jsonSerializerOptions);");
+                            proxyBuiler.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, context.Method);");
+                            proxyBuiler.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
+                            RelayHeaders(proxyBuiler);
+                            proxyBuiler.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
+                            proxyBuiler.AppendLine($"        result.EnsureSuccessStatusCode();");
+                            proxyBuiler.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
+                            proxyBuiler.AppendLine($"        return JsonSerializer.Deserialize<global::{((INamedTypeSymbol) methodSymbol.ReturnType).TypeArguments[0]}>(resultContent, _jsonSerializerOptions)!;");
                         }
 
                         if (methodSymbol.Parameters.Length == 3 && methodSymbol.Parameters[0].Name == "requestStream")
                         {
                             //duplex streaming
-                            sb.AppendLine("        throw new System.NotSupportedException();");
+                            proxyBuiler.AppendLine("        throw new System.NotSupportedException();");
                         }
                         else if (methodSymbol.Parameters.Length == 3)
                         {
                             //server streaming
-                            sb.AppendLine($"        var payload = JsonSerializer.Serialize({methodSymbol.Parameters[0].Name}, options: _jsonSerializerOptions);");
-                            sb.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, context.Method);");
-                            sb.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
-                            RelayHeaders(sb);
-                            sb.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
-                            sb.AppendLine($"        result.EnsureSuccessStatusCode();");
-                            sb.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
+                            proxyBuiler.AppendLine($"        var payload = JsonSerializer.Serialize({methodSymbol.Parameters[0].Name}, options: _jsonSerializerOptions);");
+                            proxyBuiler.AppendLine($"        var httpRequest = new HttpRequestMessage(HttpMethod.Post, context.Method);");
+                            proxyBuiler.AppendLine($"        httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, \"application/json\");");
+                            RelayHeaders(proxyBuiler);
+                            proxyBuiler.AppendLine($"        var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);");
+                            proxyBuiler.AppendLine($"        result.EnsureSuccessStatusCode();");
+                            proxyBuiler.AppendLine($"        var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);");
 
-                            sb.AppendLine($"        foreach(var item in JsonSerializer.Deserialize<global::{((INamedTypeSymbol) methodSymbol.Parameters[1].Type).TypeArguments[0]}[]>(resultContent, _jsonSerializerOptions)!)");
-                            sb.AppendLine("        {");
-                            sb.AppendLine("            context.CancellationToken.ThrowIfCancellationRequested();");
-                            sb.AppendLine($"            await responseStream.WriteAsync(item);");
-                            sb.AppendLine("        }");
+                            proxyBuiler.AppendLine($"        foreach(var item in JsonSerializer.Deserialize<global::{((INamedTypeSymbol) methodSymbol.Parameters[1].Type).TypeArguments[0]}[]>(resultContent, _jsonSerializerOptions)!)");
+                            proxyBuiler.AppendLine("        {");
+                            proxyBuiler.AppendLine("            context.CancellationToken.ThrowIfCancellationRequested();");
+                            proxyBuiler.AppendLine($"            await responseStream.WriteAsync(item);");
+                            proxyBuiler.AppendLine("        }");
                         }
 
 
 
-                        sb.AppendLine("   }");
-                        sb.AppendLine();
+                        proxyBuiler.AppendLine("   }");
+                        proxyBuiler.AppendLine();
 
                     }
-                    sb.AppendLine("}");
+                    proxyBuiler.AppendLine("}");
                 }
 
-                context.AddSource($"{className}.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+                //context.AddSource($"{className}.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
             }
         }
         
@@ -175,9 +201,8 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         sb1.AppendLine($"       System.Console.WriteLine(\"GRPC-Mock-Server generated for the following services:\");");
         foreach (var service in services)
         {
-            var (dotnetName, proxyNamespace, protoName) = service;
-            sb1.AppendLine($"       System.Console.WriteLine(\"\t* {protoName}\");");
-            sb1.AppendLine($"       app.MapGrpcService<{proxyNamespace}.{dotnetName}>();");
+            sb1.AppendLine($"       System.Console.WriteLine(\"\t* {service}\");");
+            sb1.AppendLine($"       app.MapGrpcService<{service}>();");
         }
 
       
@@ -185,7 +210,8 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         using (StreamReader reader = new StreamReader(stream))
         {
             string result = reader.ReadToEnd();
-            var mainContent = result.Replace("//REPLACE:MapGrpcToRestProxies", sb1.ToString());
+            var mainContent = result.Replace("//REPLACE:RegisterProxy", sb1.ToString())
+                .Replace("//REPLACE:ProxyDefinition", proxyBuiler.ToString());
             context.AddSource($"GrpcMockServer.g.cs", SourceText.From(mainContent, Encoding.UTF8));
         }
     }
@@ -196,11 +222,5 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
         {
             httpRequest.Headers.Add(requestHeader.Key, requestHeader.Value);
         }");
-    }
-
-
-    private static ClassDeclarationSyntax GetProxyClass(GeneratorSyntaxContext ctx)
-    {
-        return (ClassDeclarationSyntax) ctx.Node;
     }
 }
