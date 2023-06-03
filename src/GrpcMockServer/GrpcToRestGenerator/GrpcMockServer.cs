@@ -13,6 +13,7 @@ using Grpc.Core;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Collections.Generic;
 
 namespace /*MockServerNamespace*/;
 
@@ -79,6 +80,31 @@ public partial class /*MockServerName*/: IAsyncDisposable
                     }
                 }
             }
+        }
+    }
+
+    public class InfoBinder : ServiceBinderBase
+    {
+        public HashSet<string> Services { get; } = new HashSet<string>();
+
+        public override void AddMethod<TRequest, TResponse>(Method<TRequest, TResponse> method, UnaryServerMethod<TRequest, TResponse> handler)
+        {
+            Services.Add(method.ServiceName);
+        }
+
+        public override void AddMethod<TRequest, TResponse>(Method<TRequest, TResponse> method, ClientStreamingServerMethod<TRequest, TResponse> handler)
+        {
+            Services.Add(method.ServiceName);
+        }
+
+        public override void AddMethod<TRequest, TResponse>(Method<TRequest, TResponse> method, ServerStreamingServerMethod<TRequest, TResponse> handler)
+        {
+            Services.Add(method.ServiceName);
+        }
+
+        public override void AddMethod<TRequest, TResponse>(Method<TRequest, TResponse> method, DuplexStreamingServerMethod<TRequest, TResponse> handler)
+        {
+            Services.Add(method.ServiceName);
         }
     }
 
