@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcTestKit", "GrpcTestKit\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcTestKit.Demo", "GrpcTestKit.Demo\GrpcTestKit.Demo.csproj", "{77AF974E-F681-4C34-8893-E46D6E9112E4}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcTestKit.GrpcMockServerGenerator", "GrpcToRestGenerator\GrpcTestKit.GrpcMockServerGenerator.csproj", "{56BBD673-F649-45CE-8F92-40DEDE66F89E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrpcMockServer", "GrpcMockServer\GrpcMockServer.csproj", "{93505E66-FE4F-47CB-9B89-3DC1B4C2301C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{77AF974E-F681-4C34-8893-E46D6E9112E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77AF974E-F681-4C34-8893-E46D6E9112E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77AF974E-F681-4C34-8893-E46D6E9112E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56BBD673-F649-45CE-8F92-40DEDE66F89E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56BBD673-F649-45CE-8F92-40DEDE66F89E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56BBD673-F649-45CE-8F92-40DEDE66F89E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56BBD673-F649-45CE-8F92-40DEDE66F89E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93505E66-FE4F-47CB-9B89-3DC1B4C2301C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93505E66-FE4F-47CB-9B89-3DC1B4C2301C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93505E66-FE4F-47CB-9B89-3DC1B4C2301C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93505E66-FE4F-47CB-9B89-3DC1B4C2301C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

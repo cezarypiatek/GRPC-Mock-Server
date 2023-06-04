@@ -116,6 +116,66 @@ namespace GrpcTestKit.Demo
 
 
             grpcMockClient.Inspect();
+        }     
+        
+        [Test]
+        public async Task test_with_inmemoryconnector()
+        {
+            await using var connector = new InMemoryGrpcMockServerConnector(grpcPort:5033, wireMockPort: 9594);
+
+            var connectionInfo = await connector.Install();
+
+            var grpcMockClient = connector.CreateClient();
+
+            await grpcMockClient.MockRequestReply
+            (
+                serviceName: "my.package.Sample",
+                methodName: "TestRequestReply",
+                request: new { name = "Hello 1" },
+                response: new { message = "Hi there 1" }
+            );
+
+            await grpcMockClient.MockRequestReply
+            (
+                serviceName: "my.package.Sample",
+                methodName: "TestRequestReply",
+                request: new { name = "Hello 2" },
+                response: new { message = "Hi there 2" }
+            );
+
+            await grpcMockClient.MockServerStreaming
+            (
+                serviceName: "my.package.Sample",
+                methodName: "TestServerStreaming",
+                request: new { name = "Hello streaming" },
+                response: new[]
+                {
+                    new {message = "Hi there 1"},
+                    new {message = "Hi there 2"},
+                    new {message = "Hi there 3"}
+                }
+            );
+
+            await grpcMockClient.MockClientStreaming
+            (
+                serviceName: "my.package.Sample",
+                methodName: "TestServerStreaming",
+                requests: new []
+                {
+                    new { name = "Hello streaming 1" },
+                    new { name = "Hello streaming 2" }
+                },
+                response: new { message = "Hi there streaming client" }
+            );
+
+
+            grpcMockClient.Inspect();
         }
+    }
+
+    [GrpcMockServerForAutoDiscoveredSourceServices]
+    public partial class InMemoryGrpcMockServerConnector
+    {
+        
     }
 }

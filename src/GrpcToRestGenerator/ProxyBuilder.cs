@@ -151,10 +151,10 @@ public class ProxyBuilder
         {
             sb1.AppendLine($"       System.Console.WriteLine(string.Join(\"\\r\\n\", {service}.GetServices().Select(x=> $\"\\t* {{x}} \")));");
         }
-        
 
 
-        using (Stream stream = typeof(GrpcToRestProxyGenerator).Assembly.GetManifestResourceStream("GrpcTestKit.GrpcMockServerGenerator.GrpcMockServer.cs")!)
+        var assembly = typeof(GrpcToRestProxyGenerator).Assembly;
+        using (Stream stream = assembly.GetManifestResourceStream("GrpcTestKit.GrpcMockServerGenerator.GrpcMockServer.cs")!)
         using (StreamReader reader = new StreamReader(stream))
         {
             string result = reader.ReadToEnd();
