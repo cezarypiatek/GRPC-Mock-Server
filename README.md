@@ -140,6 +140,7 @@ GRPC-Mock-Server works in the following way:
 
 ## TODO
 - [ ] Implement error response codes
+- [ ] Stub generator
 - [x] Publish source generator as nuget package to allow for hosting GRPC-Mock-Server in-process
 - [x] Implement library that wraps WireMock API for stubbing
 - [x] Implement test container

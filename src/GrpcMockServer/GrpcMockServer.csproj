@@ -8,23 +8,22 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>    
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
     <ProtoRoot Condition=" '$(ProtoRoot)' == '' ">Protos</ProtoRoot>
-    <RestoreAdditionalProjectSources Condition="'$(FastTrack)' == 'true'">../GrpcToRestGenerator/bin/$(Configuration)/</RestoreAdditionalProjectSources>
+    <RestoreAdditionalProjectSources Condition="'$(FastTrack)' == 'true'">../GrpcTestKit/bin/$(Configuration)/</RestoreAdditionalProjectSources>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
 
-  <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore" Version="2.53.0" />
-    <PackageReference Include="Protobuf.System.Text.Json" Version="1.2.0" />
-    <PackageReference Include="WireMock.Net" Version="1.5.25" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(FastTrack)' == ''">
     <ProjectReference Include="..\GrpcToRestGenerator\GrpcTestKit.GrpcMockServerGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\GrpcTestKit\GrpcTestKit.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(FastTrack)' == 'true'">
-    <PackageReference Include="GrpcTestKit.GrpcMockServerGenerator" Version="1.0.0" />
+    <PackageReference Include="GrpcTestKit" Version="1.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.53.0" />
+    <PackageReference Include="WireMock.Net" Version="1.5.25" />
   </ItemGroup>
 
 

@@ -4,7 +4,7 @@ ADD run.sh /src/run.sh
 RUN chmod +x /src/run.sh
 WORKDIR /src
 # Pre-build project to cache nugets inside the container
-RUN dotnet build
+RUN dotnet build ./GrpcTestKit/GrpcTestKit.csproj /p:RunAnalyzers=false
 RUN dotnet build ./GrpcMockServer/GrpcMockServer.csproj /p:FastTrack=true /p:RunAnalyzers=false
 # GRPC endpoint
 EXPOSE 5033

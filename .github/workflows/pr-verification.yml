@@ -13,7 +13,7 @@ jobs:
         SourceRevisionId: '${{ github.sha }}'
         VersionSuffix: 'pr-${{github.event.number}}.${{ github.run_number }}'
         Configuration: Release
-        SolutionPath: ./src/GrpcTestKit/GrpcTestKit.sln
+        SolutionPath: ./src/GrpcTestKit.sln
         Deterministic: true
         PackageReleaseNotes: 'https://github.com/${{ github.repository }}/releases'
         ContinuousIntegrationBuild: true
@@ -41,5 +41,5 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         push: false
-        context: "{{defaultContext}}:src/GrpcMockServer"
+        context: "{{defaultContext}}:src/"
         tags: cezarypiatek/grpc-mock-server:latest,cezarypiatek/grpc-mock-server:${{ env.VersionPrefix }}
