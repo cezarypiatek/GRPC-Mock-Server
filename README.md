@@ -42,16 +42,15 @@ All C# components required for `Option 2` and `Option 3` are provided by [GrpcTe
 dotnet add package GrpcTestKit
 ```
 
-### Option 4: Using source generator
+### Option 4: Using source generator + proto files
 
 1. Add the following nuget package references
 
 ```xml
 <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.53.0" />
-    <PackageReference Include="Protobuf.System.Text.Json" Version="1.2.0" />
     <PackageReference Include="WireMock.Net" Version="1.5.25" />
-    <PackageReference Include="GrpcTestKit.GrpcMockServerGenerator" Version="1.13.0" />
+    <PackageReference Include="GrpcTestKit" Version="1.18.0" />
 </ItemGroup>
 ```
 
@@ -62,13 +61,49 @@ dotnet add package GrpcTestKit
 </ItemGroup>
 ```
 
-3. Use geneated `GrpcMockService`
+3. Define partial class for your mock server
 
 ```cs
-await using var mockServer = new GrpcTestKit.GrpcMockServer();
-mockServer.Start(grpcPort: 5033, wireMockPort: 9096);
+[GrpcMockServerForAutoDiscoveredSourceServices]
+public partial class MyInMemoryGrpcMockServer
+{
+}
 ```
 
+3. Use geneated mock server type
+
+```cs
+await using var mockServer = new MyInMemoryGrpcMockServer(grpcPort: 5033, wireMockPort: 9096);
+var connectionInfo = await mockServer.Install();
+```
+
+### Option 5: Using source generator + GRPC server stub
+
+1. Add the following nuget package references
+
+```xml
+<ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.53.0" />
+    <PackageReference Include="WireMock.Net" Version="1.5.25" />
+    <PackageReference Include="GrpcTestKit" Version="1.18.0" />
+</ItemGroup>
+``
+
+2. Define partial class for your mock server
+
+```cs
+[GrpcMockServerFor(typeof(Sample.SampleBase))]
+public partial class MyInMemoryGrpcMockServer
+{
+}
+```
+
+3. Use geneated mock server type
+
+```cs
+await using var mockServer = new MyInMemoryGrpcMockServer(grpcPort: 5033, wireMockPort: 9096);
+var connectionInfo = await mockServer.Install();
+```
 
 ## How to prepare mocks
 
