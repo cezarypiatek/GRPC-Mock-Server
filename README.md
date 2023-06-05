@@ -170,7 +170,7 @@ GRPC-Mock-Server works in the following way:
 |request-reply|✅|
 |server-streaming|✅|
 |client-streaming|✅|
-|client-server-streaming|❌|
+|duplex-streaming|❌|
 
 
 ## TODO
