@@ -87,7 +87,7 @@ var connectionInfo = await mockServer.Install();
     <PackageReference Include="WireMock.Net" Version="1.5.25" />
     <PackageReference Include="GrpcTestKit" Version="1.18.0" />
 </ItemGroup>
-``
+```
 
 2. Define partial class for your mock server
 
