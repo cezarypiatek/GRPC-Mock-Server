@@ -14,6 +14,14 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
 
     public const string GeneratorAttribute = @"
 
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public class GrpcMockHelperForAttribute:Attribute
+{
+    public GrpcMockHelperForAttribute(Type serviceType)
+    {
+    }
+}
+
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public class GrpcMockServerForAttribute:Attribute
 {
@@ -49,6 +57,10 @@ public class GrpcMockServerForAutoDiscoveredSourceServicesAttribute:Attribute
                             return true;
                         }
                         else if (HasAttribute(c, "GrpcMockServerForAutoDiscoveredSourceServices"))
+                        {
+                            return true;
+                        }
+                        else if (HasAttribute(c, "GrpcMockHelperFor"))
                         {
                             return true;
                         }
@@ -114,6 +126,25 @@ public class GrpcMockServerForAutoDiscoveredSourceServicesAttribute:Attribute
                 var b = new ProxyBuilder(generatorType.ContainingNamespace.ToDisplayString(), generatorType.Name);
                 var output = b.Build(symbols.ToList());
                 context.AddSource($"{generatorType.Name}.g.cs", SourceText.From(output, Encoding.UTF8));
+            }
+        }
+        foreach (var mockingHelperClass in classes.OfType<ClassDeclarationSyntax>().Where(x => HasAttribute(x, "GrpcMockHelperFor")))
+        {
+            var semanticModel = compilation.GetSemanticModel(mockingHelperClass.SyntaxTree);
+
+            var mockingHelperType = semanticModel.GetDeclaredSymbol(mockingHelperClass);
+            if (mockingHelperType != null)
+            {
+                var serviceBaseSymbol = mockingHelperClass.AttributeLists.SelectMany(x => x.Attributes)
+                    .Where(x => x?.Name.ToString().Contains("GrpcMockHelperFor") == true).Select(x =>
+                        x.ArgumentList?.Arguments.FirstOrDefault()?.Expression as TypeOfExpressionSyntax).OfType<TypeOfExpressionSyntax>()
+                    .Select(x => semanticModel.GetSymbolInfo(x.Type).Symbol)
+                    .OfType<INamedTypeSymbol>();
+
+
+                var b = new StubHelperBuilder(mockingHelperType.ContainingNamespace.ToDisplayString(), mockingHelperType.Name);
+                var output = b.Build(serviceBaseSymbol.ToList());
+                context.AddSource($"{mockingHelperType.Name}.g.cs", SourceText.From(output, Encoding.UTF8));
             }
         }
     }

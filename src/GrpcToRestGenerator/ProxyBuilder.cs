@@ -1,13 +1,12 @@
 ﻿using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
 
 public class ProxyBuilder
 {
     private readonly string _mockServerTypeName;
     private readonly string _mockServerNamespace;
-    StringBuilder proxyBuiler = new StringBuilder();
-    List<string> services = new List<string>();
+    StringBuilder proxyBuiler = new();
+    List<string> services = new();
 
     private static void RelayHeaders(StringBuilder sb)
     {
@@ -29,21 +28,29 @@ public class ProxyBuilder
         {
             {
                 var serviceName = typeSymbol.Name.Substring(0, typeSymbol.Name.Length - 4);
-                var className = $"{typeSymbol.ContainingNamespace.ToString().Replace(".", "")}{serviceName}GrpcToRestProxy";
+                var classPrefix = $"{typeSymbol.ContainingNamespace.ToString().Replace(".", "")}{serviceName}";
+                var className = $"{classPrefix}GrpcToRestProxy";
                 services.Add(className);
 
                 {
+
                     proxyBuiler.AppendLine("");
                     proxyBuiler.AppendLine($"public class {className} : {typeSymbol.ToDisplayString()}");
                     proxyBuiler.AppendLine("{");
                     proxyBuiler.AppendLine($@"
 
-    public static IReadOnlyCollection<string> GetServices()
+    private static string? _serviceName;
+    
+    public static string GetServiceName()
     {{
-        var impl = new {className}(null!);
-        var infoBinder = new InfoBinder();
-        {typeSymbol.ContainingType.ToDisplayString()}.BindService(infoBinder, impl);
-        return infoBinder.Services;
+        if(_serviceName == null)
+        {{
+            var impl = new {className}(null!);
+            var infoBinder = new InfoBinder();
+            {typeSymbol.ContainingType.ToDisplayString()}.BindService(infoBinder, impl);
+            _serviceName = infoBinder.Services.Distinct().FirstOrDefault() ?? """";
+        }}
+        return _serviceName;
     }}
 
 ");
@@ -149,7 +156,7 @@ public class ProxyBuilder
         sb1.AppendLine($"       System.Console.WriteLine(\"GRPC-Mock-Server generated for the following services:\");");
         foreach (var service in services)
         {
-            sb1.AppendLine($"       System.Console.WriteLine(string.Join(\"\\r\\n\", {service}.GetServices().Select(x=> $\"\\t* {{x}} \")));");
+            sb1.AppendLine($"       System.Console.WriteLine(\"\t*\"+{service}.GetServiceName());");
         }
 
 

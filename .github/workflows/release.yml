@@ -41,7 +41,7 @@ jobs:
       shell: pwsh
     - name: Build extension
       run: |
-        dotnet build $env:SolutionPath
+        dotnet build $env:SolutionPath -maxcpucount:1 
       shell: pwsh
     - name: Generate release note
       run: |
