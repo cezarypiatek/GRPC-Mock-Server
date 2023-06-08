@@ -156,6 +156,60 @@ await grpcMockClient.MockClientStreaming
 );
 ```
 
+You can also generate stub helpers that will simplify your code responsible for preparing mocks/stubs.
+
+
+```cs
+[GrpcMockHelperFor(typeof(Sample.SampleBase))]
+public partial class SampleMockHelper
+{
+
+}
+```
+
+Now you can prepare your mocks as follows:
+
+```cs
+await using var connector = new InMemoryGrpcMockServerConnector(grpcPort:5033, wireMockPort: 9594);
+                
+_ = await connector.Install();
+
+var grpcMockClient = connector.CreateClient();
+
+var mockHelper = new SampleMockHelper(grpcMockClient);
+
+_ = await mockHelper.MockTestRequestReply
+(
+    request: new HelloRequest {Name = "Hello 1"},
+    response: new HelloReply {Message = "Hi there 1"}
+);
+
+_ = await mockHelper.MockTestServerStreaming
+(
+    request: new HelloRequest {Name = "Hello streaming"},
+    response: new[]
+    {
+        new HelloReply {Message = "Hi there 1"},
+        new HelloReply {Message = "Hi there 2"},
+        new HelloReply {Message = "Hi there 2"},
+    }
+);
+
+_ = await mockHelper.MockTestClientStreaming
+(
+    request: new []
+    {
+        new HelloRequest {Name = "Hello streaming 1"},
+        new HelloRequest {Name = "Hello streaming 2"},
+    },
+    response: new HelloReply
+    {
+        Message = "Hi there streaming client"
+    }
+);
+
+```
+
 ## How does it work
 
 GRPC-Mock-Server works in the following way:
