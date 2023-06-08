@@ -1,6 +1,38 @@
 # GRPC-Mock-Server
 Super fast, platform independent, standalone component for mocking GRPC services using [WireMock.NET](https://github.com/WireMock-Net/WireMock.Net) stubbing engine
 
+## How does it work
+
+GRPC-Mock-Server works in the following way:
+- compile provided `*.proto` files
+- generate proxy for every service and method defined in the `*.proto` files
+- use the generated proxy to translate GRPC calls to REST and forward it to `WireMock` backend
+
+```mermaid
+sequenceDiagram    
+    participant Tests
+    participant TestedApp as Tested App
+    box  GRPC-Mock-Server
+    participant Frontend as Fronted [GRPC to HTTP proxy]
+    participant Backend as Backend  [WireMock]
+    end
+    autonumber
+    Tests->> Backend : Prepare mapping
+    Tests->> TestedApp: call
+    activate TestedApp
+    TestedApp->>Frontend: Call GRPC service    
+    activate Frontend
+    Frontend ->> Frontend: Translate GRPC to HTTP
+    Frontend ->>  Backend: Forward HTTP request to WireMock
+    activate Backend
+    Backend -->> Frontend: Respond with matched HTP request
+    deactivate Backend
+     Frontend ->> Frontend: Translate HTTP to GRPC
+    Frontend -->> TestedApp : Return GRPC response
+    deactivate Frontend
+    deactivate TestedApp
+```
+
 
 ## How to run GRPC-Mock-Server
 
@@ -210,12 +242,6 @@ _ = await mockHelper.MockTestClientStreaming
 
 ```
 
-## How does it work
-
-GRPC-Mock-Server works in the following way:
-- compile provided `*.proto` files
-- generate proxy for every service and method defined in the `*.proto` files
-- use the generated proxy to translate GRPC calls to REST and forward it to `WireMock` backend
 
 ## Supported GRPC communication patterns
 
