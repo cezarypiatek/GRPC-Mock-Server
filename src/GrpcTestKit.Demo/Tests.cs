@@ -1,11 +1,13 @@
 using System.Diagnostics;
+using Grpc.Core;
 using GrpcTestKit.TestConnectors;
 using GrpcTestKit.TestConnectors.Docker;
 using GrpcTestKit.TestConnectors.Kubernetes;
+using My.Package;
 
 namespace GrpcTestKit.Demo
 {
-    
+
     [Explicit]
     public class Tests
     {
@@ -52,7 +54,7 @@ namespace GrpcTestKit.Demo
             (
                 serviceName: "my.package.Sample",
                 methodName: "TestServerStreaming",
-                requests: new []
+                request: new []
                 {
                     new { name = "Hello streaming 1" },
                     new { name = "Hello streaming 2" }
@@ -106,7 +108,7 @@ namespace GrpcTestKit.Demo
             (
                 serviceName: "my.package.Sample",
                 methodName: "TestServerStreaming",
-                requests: new []
+                request: new []
                 {
                     new { name = "Hello streaming 1" },
                     new { name = "Hello streaming 2" }
@@ -160,7 +162,7 @@ namespace GrpcTestKit.Demo
             (
                 serviceName: "my.package.Sample",
                 methodName: "TestServerStreaming",
-                requests: new []
+                request: new []
                 {
                     new { name = "Hello streaming 1" },
                     new { name = "Hello streaming 2" }
@@ -171,11 +173,61 @@ namespace GrpcTestKit.Demo
 
             grpcMockClient.Inspect();
         }
+
+        [Test]
+        public async Task test_with_inmemoryconnector_with_mock_helper()
+        {
+            await using var connector = new InMemoryGrpcMockServerConnector(grpcPort:5033, wireMockPort: 9594);
+                
+            _ = await connector.Install();
+
+            var grpcMockClient = connector.CreateClient();
+            
+            var mockHelper = new SampleMockHelper(grpcMockClient);
+
+            _ = await mockHelper.MockTestRequestReply
+            (
+                request: new HelloRequest {Name = "Hello 1"},
+                response: new HelloReply {Message = "Hi there 1"}
+            );
+
+            _ = await mockHelper.MockTestServerStreaming
+            (
+                request: new HelloRequest {Name = "Hello streaming"},
+                response: new[]
+                {
+                    new HelloReply {Message = "Hi there 1"},
+                    new HelloReply {Message = "Hi there 2"},
+                    new HelloReply {Message = "Hi there 2"},
+                }
+            );
+
+            _ = await mockHelper.MockTestClientStreaming
+            (
+                request: new []
+                {
+                    new HelloRequest {Name = "Hello streaming 1"},
+                    new HelloRequest {Name = "Hello streaming 2"},
+                },
+                response: new HelloReply
+                {
+                    Message = "Hi there streaming client"
+                }
+            );
+
+            grpcMockClient.Inspect();
+        }
     }
 
-    [GrpcMockServerForAutoDiscoveredSourceServices]
+    [GrpcMockServerFor(typeof(Sample.SampleBase))]
     public partial class InMemoryGrpcMockServerConnector
     {
         
+    }
+
+    [GrpcMockHelperFor(typeof(Sample.SampleBase))]
+    public partial class SampleMockHelper
+    {
+
     }
 }

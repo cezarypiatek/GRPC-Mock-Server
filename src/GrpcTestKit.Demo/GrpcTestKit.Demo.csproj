@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,4 +30,7 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Protobuf Include="protos\**\*.proto"  GrpcServices="Server" />
+  </ItemGroup>
 </Project>
