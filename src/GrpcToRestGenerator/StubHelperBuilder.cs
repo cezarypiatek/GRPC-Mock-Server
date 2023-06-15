@@ -85,11 +85,20 @@ public async Task<IAsyncDisposable> Mock{methodSymbol.Name}({methodSymbol.Parame
                         if (methodSymbol.Parameters.Length == 3 && methodSymbol.Parameters[0].Name == "requestStream")
                         {
                             //duplex streaming
+                            _stubBuilder.AppendLine(@$"
+public async Task<IAsyncDisposable> Mock{methodSymbol.Name}(IReadOnlyList<MessageExchange<{((INamedTypeSymbol)methodSymbol.Parameters[0].Type).TypeArguments[0]},{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0]}>> scenario)
+{{
+    return await _grpcMockClient.MockDuplexStreaming
+    (
+        serviceName: _serviceName,
+        methodName: ""{methodSymbol.Name}"",
+        scenario: scenario
+    );
+}}");
                         }
                         else if (methodSymbol.Parameters.Length == 3)
                         {
                             //server streaming
-
                             _stubBuilder.AppendLine(@$"
 public async Task<IAsyncDisposable> Mock{methodSymbol.Name}({methodSymbol.Parameters[0].Type} request, IReadOnlyList<{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0]}> response)
 {{

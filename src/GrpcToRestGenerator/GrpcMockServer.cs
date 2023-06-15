@@ -19,6 +19,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using GrpcTestKit.TestConnectors;
 using System;
+using System.Net;
 
 /*MockServerNamespace*/
 
