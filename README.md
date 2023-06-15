@@ -60,6 +60,44 @@ await connector.Install();
 
 `TestChartGrpcMockServerConnector` uses [SmoothSailing](https://github.com/cezarypiatek/SmoothSailing) to deploy GRPC-Mock-Server into Kubernetes cluster directly from the C# code. This option requires `Helm` and `kubectl` to installed on the host machine.
 
+```mermaid
+stateDiagram-v2
+
+    state "K8s Installation" as g1
+    state "Pod startup" as g2
+    state "Runtime" as g3
+    state "Converts proto files to ConfigMap" as s1
+    state "Installs Helm Chart with GRPC-Mock-Server" as s2
+    state "Mounts ConfigMap with protos as storage to pod" as s22
+    state "Compiles proto files" as s3
+    state "Generates GRPC-To-HTTP proxy" as s4
+    state "Compiles generated code" as s5
+    state "Starts host app with GRPC-To-HTTP proxy and WireMock" as s6
+    state "Handles GRPC calls" as s7
+    state "Handles WireMock calls" as s8
+     direction LR
+    g1 --> g2
+    g2 --> g3
+    state g1
+    {
+        direction TB
+        s1 --> s2
+        s2 --> s22
+    }
+    state g2 {
+        direction TB       
+        s3 --> s4        
+        s4 --> s5
+        s5 --> s6
+    }
+    state g3{
+        direction TB
+        s7
+        s8 
+    }
+    
+```
+
 ```cs
 await using var connector = new TestChartGrpcMockServerConnector(protoDirectory: "protos", grpcPort:5033);
 
@@ -255,7 +293,7 @@ _ = await mockHelper.MockTestClientStreaming
 
 ## TODO
 - [ ] Implement error response codes
-- [ ] Stub generator
+- [x] Stub generator
 - [x] Publish source generator as nuget package to allow for hosting GRPC-Mock-Server in-process
 - [x] Implement library that wraps WireMock API for stubbing
 - [x] Implement test container
