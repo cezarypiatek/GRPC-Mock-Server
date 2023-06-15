@@ -113,7 +113,40 @@ public class ProxyBuilder
                         if (methodSymbol.Parameters.Length == 3 && methodSymbol.Parameters[0].Name == "requestStream")
                         {
                             //duplex streaming
-                            proxyBuiler.AppendLine("        throw new System.NotSupportedException();");
+                            proxyBuiler.AppendLine($@"
+        await foreach (var requestItem in  requestStream.ReadAllAsync(context.CancellationToken))
+        {{
+            context.CancellationToken.ThrowIfCancellationRequested();
+            var payload = JsonSerializer.Serialize(requestItem, options: _jsonSerializerOptions);
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, context.Method);
+            httpRequest.Content = new StringContent(payload, System.Text.Encoding.UTF8, ""application/json"");
+            foreach (var requestHeader in context.RequestHeaders)
+            {{
+                httpRequest.Headers.Add(requestHeader.Key, requestHeader.Value);
+            }}
+            var result = await _httpClient.SendAsync(httpRequest, context.CancellationToken);
+            result.EnsureSuccessStatusCode();
+            result.Headers.TryGetValues(""GRPC-Action"", out var headers);         
+            var actionHeader = headers?.FirstOrDefault();
+
+            if (actionHeader  == ""ContinueRequestStream"")
+            {{
+                continue;
+            }}
+            
+            var resultContent = await result.Content.ReadAsStringAsync(context.CancellationToken);
+            foreach(var responseItem in JsonSerializer.Deserialize<global::{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0]}[]>(resultContent, _jsonSerializerOptions)!)
+            {{
+                context.CancellationToken.ThrowIfCancellationRequested();
+                await responseStream.WriteAsync(responseItem);
+            }}
+            
+            if (actionHeader  == ""ResponseStreamFinished"")
+            {{
+                return;
+            }}
+        }}
+");
                         }
                         else if (methodSymbol.Parameters.Length == 3)
                         {

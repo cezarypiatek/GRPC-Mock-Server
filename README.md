@@ -1,6 +1,15 @@
 # GRPC-Mock-Server
 Super fast, platform independent, standalone component for mocking GRPC services using [WireMock.NET](https://github.com/WireMock-Net/WireMock.Net) stubbing engine
 
+## Supported GRPC communication patterns
+
+|Pattern|Implementation status|
+|---|----|
+|request-reply|✅|
+|server-streaming|✅|
+|client-streaming|✅|
+|duplex-streaming|✅|
+
 ## How does it work
 
 GRPC-Mock-Server works in the following way:
@@ -224,6 +233,38 @@ await grpcMockClient.MockClientStreaming
     },
     response: new { message = "Hi there streaming client" }
 );
+
+await grpcMockClient.MockDuplexStreaming
+(
+    serviceName: "my.package.Sample",
+    methodName: "TestClientServerStreaming", 
+    scenario: new MessageExchange[]
+    {
+        new ()
+        {
+            Requests = new[]
+            {
+                new {name = "Ping 1a"},
+                new {name = "Ping 1b"}
+            },
+            Responses = new[]
+            {
+                new {message = "Pong 1"}
+            }
+        },
+        new ()
+        {
+            Requests = new[]
+            {
+                new {name = "Ping 2"},
+            },
+            Responses = new[]
+            {
+                new {message = "Pong 2a"},
+                new {message = "Pong 2b"}
+            }
+        },
+});
 ```
 
 You can also generate stub helpers that will simplify your code responsible for preparing mocks/stubs.
@@ -278,18 +319,34 @@ _ = await mockHelper.MockTestClientStreaming
     }
 );
 
+_ = await mockHelper.MockTestClientServerStreaming(new MessageExchange<HelloRequest, HelloReply>[]
+{
+    new()
+    {
+        Requests = new HelloRequest[]
+        {
+            new() {Name = "Ping 1a"},
+            new() {Name = "Ping 1b"}
+        },
+        Responses = new HelloReply[]
+        {
+            new() {Message = "Pong 1"}
+        }
+    },
+    new()
+    {
+        Requests = new HelloRequest[]
+        {
+            new() {Name = "Ping 2"},
+        },
+        Responses = new HelloReply[]
+        {
+            new() {Message = "Pong 2a"},
+            new() {Message = "Pong 2b"}
+        }
+    },
+});
 ```
-
-
-## Supported GRPC communication patterns
-
-|Pattern|Implementation status|
-|---|----|
-|request-reply|✅|
-|server-streaming|✅|
-|client-streaming|✅|
-|duplex-streaming|❌|
-
 
 ## TODO
 - [ ] Implement error response codes
