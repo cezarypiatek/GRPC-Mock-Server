@@ -13,6 +13,7 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
 {
 
     public const string GeneratorAttribute = @"
+using System;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public class GrpcMockHelperForAttribute:Attribute
