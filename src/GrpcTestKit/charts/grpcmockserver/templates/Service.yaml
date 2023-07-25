@@ -12,6 +12,6 @@ spec:
       targetPort: 5033
       protocol: TCP
     - name: wiremockport
-      port: 9095
+      port: {{ .Values.stubbingPort | default 9095}}
       targetPort: 9095
       protocol: TCP
