@@ -72,7 +72,12 @@ namespace GrpcTestKit.Demo
         [Test]
         public async Task test_with_testcharts()
         {
-            await using var connector = new TestChartGrpcMockServerConnector("protos", grpcPort: 8889);
+            await using var connector = new TestChartGrpcMockServerConnector( new TestChartGrpcMockServerConnectorSettings
+            {
+                ProtoDirectory ="protos",
+                GrpcPort = 8889,
+                ExposeStubbingPortOnLocalhost = true
+            });
 
             var connectionInfo = await connector.Install();
 

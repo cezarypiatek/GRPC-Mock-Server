@@ -108,9 +108,15 @@ stateDiagram-v2
 ```
 
 ```cs
-await using var connector = new TestChartGrpcMockServerConnector(protoDirectory: "protos", grpcPort:5033);
+var settings = new TestChartGrpcMockServerConnectorSettings
+{
+    ProtoDirectory = "protos",
+    GrpcPort = 8889,
+    ExposeStubbingPortOnLocalhost = true
+};
+await using var connector = new TestChartGrpcMockServerConnector(settings);
 
-await connector.Install();
+var connectionInfo = await connector.Install();
 ```
 
 [![NuGet](https://img.shields.io/nuget/vpre/GrpcTestKit.svg)](https://www.nuget.org/packages/GrpcTestKit/)
