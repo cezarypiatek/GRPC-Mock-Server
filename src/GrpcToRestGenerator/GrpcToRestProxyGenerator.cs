@@ -126,7 +126,7 @@ public class GrpcMockServerForAutoDiscoveredSourceServicesAttribute:Attribute
 
                 var b = new ProxyBuilder(generatorType.ContainingNamespace.ToDisplayString(), generatorType.Name);
                 var output = b.Build(symbols.ToList());
-                context.AddSource($"{generatorType.Name}.g.cs", SourceText.From(output, Encoding.UTF8));
+                context.AddSource($"{GenerateFileName(generatorType)}.g.cs", SourceText.From(output, Encoding.UTF8));
             }
         }
         foreach (var mockingHelperClass in classes.OfType<ClassDeclarationSyntax>().Where(x => HasAttribute(x, "GrpcMockHelperFor")))
@@ -145,8 +145,13 @@ public class GrpcMockServerForAutoDiscoveredSourceServicesAttribute:Attribute
 
                 var b = new StubHelperBuilder(mockingHelperType.ContainingNamespace.ToDisplayString(), mockingHelperType.Name);
                 var output = b.Build(serviceBaseSymbol.ToList());
-                context.AddSource($"{mockingHelperType.Name}.g.cs", SourceText.From(output, Encoding.UTF8));
+                context.AddSource($"{GenerateFileName(mockingHelperType)}.g.cs", SourceText.From(output, Encoding.UTF8));
             }
         }
+    }
+
+    private static string GenerateFileName(INamedTypeSymbol type)
+    {
+        return type.ToDisplayString().Replace(".", "_");
     }
 }
