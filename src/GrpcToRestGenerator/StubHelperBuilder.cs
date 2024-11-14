@@ -20,7 +20,12 @@ public class StubHelperBuilder
         {
             {
                 {
+                    _stubBuilder.AppendLine("using System;");
                     _stubBuilder.AppendLine("using GrpcTestKit.TestConnectors;");
+                    _stubBuilder.AppendLine("using System.Threading;");
+                    _stubBuilder.AppendLine("using System.Threading.Tasks;");
+                    _stubBuilder.AppendLine("using System.Linq;");
+                    _stubBuilder.AppendLine("using System.Collections.Generic;");
                     if (string.IsNullOrWhiteSpace(_helperNamespace) == false)
                     {
                         _stubBuilder.AppendLine($"namespace {_helperNamespace};");
