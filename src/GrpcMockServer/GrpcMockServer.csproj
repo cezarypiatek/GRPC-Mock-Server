@@ -11,6 +11,7 @@
     <RestoreAdditionalProjectSources Condition="'$(FastTrack)' == 'true'">../GrpcTestKit/bin/$(Configuration)/</RestoreAdditionalProjectSources>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <IncludeHttpRuleProtos>true</IncludeHttpRuleProtos>
   </PropertyGroup>
 
 
@@ -23,6 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="8.0.11" />
     <PackageReference Include="WireMock.Net" Version="1.6.7" />
   </ItemGroup>
 
