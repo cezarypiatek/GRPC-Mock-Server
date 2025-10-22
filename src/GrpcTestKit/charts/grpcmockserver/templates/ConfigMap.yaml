@@ -1,9 +1,12 @@
+{{- range .Values.configMaps }}
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{.Release.Name}}-protodrive
+  name: {{$.Release.Name}}-protodrive-{{ .index }}
 data:
-{{ range .Values.protoFiles }}
+{{ range .files }}
   {{ .key }}: |
 {{ .content | indent 4 }}
 {{ end }}
+{{- end }}
