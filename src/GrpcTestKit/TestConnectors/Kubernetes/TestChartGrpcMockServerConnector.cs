@@ -1,6 +1,7 @@
 using RestEase;
 using SmoothSailing;
 using WireMock.Client;
+using System.Text;
 
 namespace GrpcTestKit.TestConnectors.Kubernetes;
 
@@ -25,17 +26,60 @@ public class TestChartGrpcMockServerConnector : IGrpcMockServerConnector
     {
         var allProtoFile = Directory.EnumerateFiles(_protoDirectory, "*.proto", SearchOption.AllDirectories);
 
+        const int maxConfigMapSizeBytes = 512 * 1024; // 0.5 MB
+        var configMaps = new List<object>();
+        var currentConfigMapFiles = new List<object>();
+        var currentConfigMapSize = 0;
+        var configMapIndex = 0;
+
+        foreach (var protoFile in allProtoFile)
+        {
+            var content = File.ReadAllText(protoFile);
+            var path = protoFile.Remove(0, _protoDirectory.Length).Replace("\\", "/").Trim('/');
+            var key = Guid.NewGuid().ToString("N");
+            
+            // Estimate size (content + some overhead for YAML structure)
+            var estimatedSize = Encoding.UTF8.GetByteCount(content) + Encoding.UTF8.GetByteCount(key) + Encoding.UTF8.GetByteCount(path) + 100;
+
+            // If adding this file would exceed the limit and we already have files, start a new ConfigMap
+            if (currentConfigMapFiles.Count > 0 && currentConfigMapSize + estimatedSize > maxConfigMapSizeBytes)
+            {
+                configMaps.Add(new
+                {
+                    index = configMapIndex,
+                    files = currentConfigMapFiles.ToArray()
+                });
+                
+                currentConfigMapFiles = new List<object>();
+                currentConfigMapSize = 0;
+                configMapIndex++;
+            }
+
+            currentConfigMapFiles.Add(new
+            {
+                key = key,
+                path = path,
+                content = content
+            });
+            currentConfigMapSize += estimatedSize;
+        }
+
+        // Add the last ConfigMap if it has any files
+        if (currentConfigMapFiles.Count > 0)
+        {
+            configMaps.Add(new
+            {
+                index = configMapIndex,
+                files = currentConfigMapFiles.ToArray()
+            });
+        }
+
         var overrides = new
         {
             dockerImage = _settings.DockerImage,
             grpcPort = _settings.GrpcPort,
             stubbingPort = _settings.StubbingPort,
-            protoFiles = allProtoFile.Select(x => new
-            {
-                key = Guid.NewGuid().ToString("N"),
-                path = x.Remove(0, _protoDirectory.Length).Replace("\\", "/").Trim('/'),
-                content = File.ReadAllText(x)
-            }).ToArray()
+            configMaps = configMaps.ToArray()
         };
 
         _release = await _chartInstaller.Install(_chart, _settings.ReleaseName, overrides, context: _settings.Context);

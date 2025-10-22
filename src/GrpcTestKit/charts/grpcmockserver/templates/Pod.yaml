@@ -22,12 +22,16 @@ spec:
       periodSeconds: 10
       timeoutSeconds: 10
     volumeMounts:
-{{- range .Values.protoFiles }}
-      - name: protodrive
-        mountPath: {{ printf "/protos/%s" (.path) }}
+{{- range $configMap := .Values.configMaps }}
+{{- range $configMap.files }}
+      - name: protodrive-{{ $configMap.index }}
+        mountPath: {{ printf "/protos/%s" .path }}
         subPath: {{ .key }}
-{{ end }}
+{{- end }}
+{{- end }}
   volumes:
-    - name: protodrive
+{{- range .Values.configMaps }}
+    - name: protodrive-{{ .index }}
       configMap:
-        name: {{.Release.Name}}-protodrive
+        name: {{$.Release.Name}}-protodrive-{{ .index }}
+{{- end }}
