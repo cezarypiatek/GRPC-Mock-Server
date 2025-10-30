@@ -21,6 +21,7 @@ spec:
       initialDelaySeconds: 15
       periodSeconds: 10
       timeoutSeconds: 10
+{{if .Values.configMaps}}
     volumeMounts:
 {{- range $configMap := .Values.configMaps }}
 {{- range $configMap.files }}
@@ -34,4 +35,5 @@ spec:
     - name: protodrive-{{ .index }}
       configMap:
         name: {{$.Release.Name}}-protodrive-{{ .index }}
+{{- end }}
 {{- end }}

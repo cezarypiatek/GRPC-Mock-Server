@@ -4,7 +4,7 @@ namespace GrpcTestKit.TestConnectors.Kubernetes;
 
 public class TestChartGrpcMockServerConnectorSettings
 {
-    public string ProtoDirectory { get;  set; }
+    public string? ProtoDirectory { get;  set; }
     public string DockerImage { get; set; } = "cezarypiatek/grpc-mock-server";
     public string ReleaseName { get; set; } = "grpcmockserverconnector";
     public int GrpcPort { get;  set; } = 5033;

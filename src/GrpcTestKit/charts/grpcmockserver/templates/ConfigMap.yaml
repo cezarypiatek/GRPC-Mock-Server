@@ -1,3 +1,4 @@
+{{- if .Values.configMaps }}
 {{- range .Values.configMaps }}
 ---
 apiVersion: v1
@@ -9,4 +10,5 @@ data:
   {{ .key }}: |
 {{ .content | indent 4 }}
 {{ end }}
+{{- end }}
 {{- end }}
