@@ -10,6 +10,13 @@ spec:
   - name: grpcmockserver
     image: {{ .Values.dockerImage | default "cezarypiatek/grpc-mock-server" }}
     imagePullPolicy: IfNotPresent
+{{- if .Values.envVariables}}
+    env:
+{{- range $key, $value := .Values.envVariables }}
+      - name: {{ $key }}
+        value: {{ $value | quote }}
+{{- end }}
+{{- end }}
     ports:
     - name: wiremockport
       containerPort: 9095

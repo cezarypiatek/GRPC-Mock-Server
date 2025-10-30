@@ -29,7 +29,8 @@ public class TestChartGrpcMockServerConnector : IGrpcMockServerConnector
             dockerImage = _settings.DockerImage,
             grpcPort = _settings.GrpcPort,
             stubbingPort = _settings.StubbingPort,
-            configMaps = CreateConfigMapsWithProto().ToArray()
+            configMaps = CreateConfigMapsWithProto().ToArray(),
+            envVariables = _settings.EnvVariables
         };
 
         _release = await _chartInstaller.Install(_chart, _settings.ReleaseName, overrides, context: _settings.Context);
