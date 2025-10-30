@@ -8,7 +8,7 @@ namespace GrpcTestKit.TestConnectors.Kubernetes;
 public class TestChartGrpcMockServerConnector : IGrpcMockServerConnector
 {
     private readonly TestChartGrpcMockServerConnectorSettings _settings;
-    private readonly string _protoDirectory;
+    private readonly string? _protoDirectory;
     private readonly ChartInstaller _chartInstaller;
     private readonly ChartFromLocalPath _chart;
     private Release? _release;
@@ -17,14 +17,51 @@ public class TestChartGrpcMockServerConnector : IGrpcMockServerConnector
     public TestChartGrpcMockServerConnector(TestChartGrpcMockServerConnectorSettings settings)
     {
         _settings = settings;
-        _protoDirectory = Path.GetFullPath(settings.ProtoDirectory);
+        _protoDirectory = settings.ProtoDirectory;
         _chartInstaller = new ChartInstaller();
         _chart = new ChartFromLocalPath("./charts/grpcmockserver");
     }
 
     public async Task<GrpcMockServerConnectionInfo> Install()
     {
-        var allProtoFile = Directory.EnumerateFiles(_protoDirectory, "*.proto", SearchOption.AllDirectories);
+        var overrides = new
+        {
+            dockerImage = _settings.DockerImage,
+            grpcPort = _settings.GrpcPort,
+            stubbingPort = _settings.StubbingPort,
+            configMaps = CreateConfigMapsWithProto().ToArray()
+        };
+
+        _release = await _chartInstaller.Install(_chart, _settings.ReleaseName, overrides, context: _settings.Context);
+
+        var grpcPort = _settings.ExposeGrpcPortOnLocalhost
+            ? await _release.StartPortForwardForService(serviceName: $"{_settings.ReleaseName}-grpcmockserver-service",
+                servicePort: _settings.GrpcPort, localPort: _settings.ExposeGrpcPortOnLocalhostPort)
+            : _settings.GrpcPort;
+
+        var stubbingPort = _settings.ExposeStubbingPortOnLocalhost
+            ? await _release.StartPortForwardForService(serviceName: $"{_settings.ReleaseName}-grpcmockserver-service",
+                servicePort: _settings.StubbingPort, localPort: _settings.ExposeStubbingPortOnLocalhostPort)
+            : _settings.StubbingPort;
+
+        var serviceName = $"{_settings.ReleaseName}-grpcmockserver-service";
+        var serviceAddress = _settings.Context?.ResolveServiceAddress(serviceName) ?? serviceName;
+        return this._connectionInfo = new GrpcMockServerConnectionInfo
+        (
+            grpcEndpoint: _settings.ExposeGrpcPortOnLocalhost ? $"http://127.0.0.1:{grpcPort}":  $"http://{serviceAddress}:{grpcPort}" ,
+            stubbingEndpoint: _settings.ExposeStubbingPortOnLocalhost?  $"http://127.0.0.1:{stubbingPort}": $"http://{serviceAddress}:{stubbingPort}"
+        );
+    }
+
+    private List<object> CreateConfigMapsWithProto()
+    {
+        if (_protoDirectory == null || string.IsNullOrWhiteSpace(_protoDirectory))
+        {
+            return new List<object>();
+        }
+        
+        var fullProtoPath = Path.GetFullPath(_protoDirectory);
+        var allProtoFile = Directory.EnumerateFiles(fullProtoPath, "*.proto", SearchOption.AllDirectories);
 
         const int maxConfigMapSizeBytes = 512 * 1024; // 0.5 MB
         var configMaps = new List<object>();
@@ -35,7 +72,7 @@ public class TestChartGrpcMockServerConnector : IGrpcMockServerConnector
         foreach (var protoFile in allProtoFile)
         {
             var content = File.ReadAllText(protoFile);
-            var path = protoFile.Remove(0, _protoDirectory.Length).Replace("\\", "/").Trim('/');
+            var path = protoFile.Remove(0, fullProtoPath.Length).Replace("\\", "/").Trim('/');
             var key = Guid.NewGuid().ToString("N");
             
             // Estimate size (content + some overhead for YAML structure)
@@ -74,33 +111,7 @@ public class TestChartGrpcMockServerConnector : IGrpcMockServerConnector
             });
         }
 
-        var overrides = new
-        {
-            dockerImage = _settings.DockerImage,
-            grpcPort = _settings.GrpcPort,
-            stubbingPort = _settings.StubbingPort,
-            configMaps = configMaps.ToArray()
-        };
-
-        _release = await _chartInstaller.Install(_chart, _settings.ReleaseName, overrides, context: _settings.Context);
-
-        var grpcPort = _settings.ExposeGrpcPortOnLocalhost
-            ? await _release.StartPortForwardForService(serviceName: $"{_settings.ReleaseName}-grpcmockserver-service",
-                servicePort: _settings.GrpcPort, localPort: _settings.ExposeGrpcPortOnLocalhostPort)
-            : _settings.GrpcPort;
-
-        var stubbingPort = _settings.ExposeStubbingPortOnLocalhost
-            ? await _release.StartPortForwardForService(serviceName: $"{_settings.ReleaseName}-grpcmockserver-service",
-                servicePort: _settings.StubbingPort, localPort: _settings.ExposeStubbingPortOnLocalhostPort)
-            : _settings.StubbingPort;
-
-        var serviceName = $"{_settings.ReleaseName}-grpcmockserver-service";
-        var serviceAddress = _settings.Context?.ResolveServiceAddress(serviceName) ?? serviceName;
-        return this._connectionInfo = new GrpcMockServerConnectionInfo
-        (
-            grpcEndpoint: _settings.ExposeGrpcPortOnLocalhost ? $"http://127.0.0.1:{grpcPort}":  $"http://{serviceAddress}:{grpcPort}" ,
-            stubbingEndpoint: _settings.ExposeStubbingPortOnLocalhost?  $"http://127.0.0.1:{stubbingPort}": $"http://{serviceAddress}:{stubbingPort}"
-        );
+        return configMaps;
     }
 
     public IGrpcMockClient CreateClient()
