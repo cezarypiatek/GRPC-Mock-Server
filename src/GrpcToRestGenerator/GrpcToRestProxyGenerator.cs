@@ -16,23 +16,29 @@ public class GrpcToRestProxyGenerator:IIncrementalGenerator
 using System;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class GrpcMockHelperForAttribute:Attribute
+internal class GrpcMockHelperForAttribute : Attribute
 {
+    public Type ServiceType { get; }
+
     public GrpcMockHelperForAttribute(Type serviceType)
     {
+        ServiceType = serviceType;
     }
 }
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-public class GrpcMockServerForAttribute:Attribute
+internal class GrpcMockServerForAttribute : Attribute
 {
+    public Type ServiceType { get; }
+    
     public GrpcMockServerForAttribute(Type serviceType)
     {
+        ServiceType = serviceType;
     }
 }
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class GrpcMockServerForAutoDiscoveredSourceServicesAttribute:Attribute
+internal class GrpcMockServerForAutoDiscoveredSourceServicesAttribute : Attribute
 {    
 }
 ";
