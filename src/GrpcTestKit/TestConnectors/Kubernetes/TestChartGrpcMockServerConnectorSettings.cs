@@ -14,4 +14,5 @@ public class TestChartGrpcMockServerConnectorSettings
     public bool ExposeStubbingPortOnLocalhost { get; set; }
     public int ExposeStubbingPortOnLocalhostPort { get; set; }
     public KubernetesContext? Context { get; set; }
+    public Dictionary<string, string> EnvVariables { get; set; } = new Dictionary<string, string>();
 }
