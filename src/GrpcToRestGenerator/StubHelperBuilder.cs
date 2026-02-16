@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Microsoft.CodeAnalysis;
 
 public class StubHelperBuilder
@@ -55,14 +55,15 @@ public partial class {_helperTypeName}
                             
 
                             _stubBuilder.AppendLine(@$"
-public async Task<IAsyncDisposable> Mock{methodSymbol.Name}(IReadOnlyList<{((INamedTypeSymbol)methodSymbol.Parameters[0].Type).TypeArguments[0]}> request, {((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0]} response)
+public async Task<IAsyncDisposable> Mock{methodSymbol.Name}(IReadOnlyList<{((INamedTypeSymbol)methodSymbol.Parameters[0].Type).TypeArguments[0]}> request, {((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0]} response, bool activityScopeLimit = true)
 {{
     return await _grpcMockClient.MockClientStreaming
     (
         serviceName: _serviceName,
         methodName: ""{methodSymbol.Name}"",
         request:request,
-        response: response
+        response: response,
+        activityScopeLimit: activityScopeLimit
     );
 }}
                         ");
@@ -74,14 +75,15 @@ public async Task<IAsyncDisposable> Mock{methodSymbol.Name}(IReadOnlyList<{((INa
                             //request-reply
 
                             _stubBuilder.AppendLine(@$"
-public async Task<IAsyncDisposable> Mock{methodSymbol.Name}({methodSymbol.Parameters[0].Type} request, {((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0]} response)
+public async Task<IAsyncDisposable> Mock{methodSymbol.Name}({methodSymbol.Parameters[0].Type} request, {((INamedTypeSymbol)methodSymbol.ReturnType).TypeArguments[0]} response, bool activityScopeLimit = true)
 {{
     return await _grpcMockClient.MockRequestReply
     (
         serviceName: _serviceName,
         methodName: ""{methodSymbol.Name}"",
         request:request,
-        response: response
+        response: response,
+        activityScopeLimit: activityScopeLimit
     );
 }}
                         ");
@@ -91,13 +93,14 @@ public async Task<IAsyncDisposable> Mock{methodSymbol.Name}({methodSymbol.Parame
                         {
                             //duplex streaming
                             _stubBuilder.AppendLine(@$"
-public async Task<IAsyncDisposable> Mock{methodSymbol.Name}(IReadOnlyList<MessageExchange<{((INamedTypeSymbol)methodSymbol.Parameters[0].Type).TypeArguments[0]},{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0]}>> scenario)
+public async Task<IAsyncDisposable> Mock{methodSymbol.Name}(IReadOnlyList<MessageExchange<{((INamedTypeSymbol)methodSymbol.Parameters[0].Type).TypeArguments[0]},{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0]}>> scenario, bool activityScopeLimit = true)
 {{
     return await _grpcMockClient.MockDuplexStreaming
     (
         serviceName: _serviceName,
         methodName: ""{methodSymbol.Name}"",
-        scenario: scenario
+        scenario: scenario,
+        activityScopeLimit: activityScopeLimit
     );
 }}");
                         }
@@ -105,14 +108,15 @@ public async Task<IAsyncDisposable> Mock{methodSymbol.Name}(IReadOnlyList<Messag
                         {
                             //server streaming
                             _stubBuilder.AppendLine(@$"
-public async Task<IAsyncDisposable> Mock{methodSymbol.Name}({methodSymbol.Parameters[0].Type} request, IReadOnlyList<{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0]}> response)
+public async Task<IAsyncDisposable> Mock{methodSymbol.Name}({methodSymbol.Parameters[0].Type} request, IReadOnlyList<{((INamedTypeSymbol)methodSymbol.Parameters[1].Type).TypeArguments[0]}> response, bool activityScopeLimit = true)
 {{
     return await _grpcMockClient.MockServerStreaming
     (
         serviceName: _serviceName,
         methodName: ""{methodSymbol.Name}"",
         request:request,
-        response: response
+        response: response,
+        activityScopeLimit: activityScopeLimit
     );
 }}");
                         }

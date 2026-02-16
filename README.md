@@ -354,6 +354,106 @@ _ = await mockHelper.MockTestClientServerStreaming(new MessageExchange<HelloRequ
 });
 ```
 
+## Activity Scope Limiting (Trace ID Filtering)
+
+GRPC-Mock-Server supports automatic filtering of mock responses based on the trace ID from the current `Activity`. This feature is particularly useful in parallel test execution scenarios where multiple tests are running concurrently and you want to ensure that each test only receives responses from its own mocks.
+
+### Prerequisites
+
+**Important:** To use this feature, you must create an `Activity` for the scope of each test method. This ensures that each test has its own unique trace ID.
+
+```cs
+using System.Diagnostics;
+
+[Fact]
+public async Task MyTest()
+{
+    using var activity = new Activity("MyTest").Start();
+    
+    // Setup mocks and run test code here
+    // All mocks created within this activity scope will be isolated to this test
+}
+```
+
+Without creating an activity, `System.Diagnostics.Activity.Current` will be `null`, and the activity scope limiting feature will not work.
+
+### How it works
+
+When `activityScopeLimit` is enabled (which is the default), the mock server automatically adds a `traceparent` header matcher to the stub configuration. This matcher uses the trace ID from `System.Diagnostics.Activity.Current` to ensure that only requests originating from the same activity context will match the stub.
+
+The trace ID is extracted from the current activity and added as a wildcard matcher pattern:
+```
+traceparent: *{currentActivity.TraceId}*
+```
+
+This means that only GRPC calls made within the same activity scope (with the same trace ID) will match the configured mock response.
+
+### Controlling the feature
+
+All mock methods support the `activityScopeLimit` parameter with a default value of `true`:
+
+```cs
+// Using the GrpcMockClient directly
+await grpcMockClient.MockRequestReply
+(
+    serviceName: "my.package.Sample",
+    methodName: "TestRequestReply",
+    request: new { name = "Hello" },
+    response: new { message = "Hi there" },
+    activityScopeLimit: true  // Default value, can be omitted
+);
+
+// Disabling activity scope limiting
+await grpcMockClient.MockRequestReply
+(
+    serviceName: "my.package.Sample",
+    methodName: "TestRequestReply",
+    request: new { name = "Hello" },
+    response: new { message = "Hi there" },
+    activityScopeLimit: false  // Mock will respond to all requests regardless of trace ID
+);
+```
+
+### Using with generated stub helpers
+
+Generated stub helpers also support the `activityScopeLimit` parameter:
+
+```cs
+var mockHelper = new SampleMockHelper(grpcMockClient);
+
+// With activity scope limiting (default)
+await mockHelper.MockTestRequestReply
+(
+    request: new HelloRequest { Name = "Hello" },
+    response: new HelloReply { Message = "Hi there" }
+    // activityScopeLimit defaults to true
+);
+
+// Without activity scope limiting
+await mockHelper.MockTestRequestReply
+(
+    request: new HelloRequest { Name = "Hello" },
+    response: new HelloReply { Message = "Hi there" },
+    activityScopeLimit: false
+);
+```
+
+### Supported methods
+
+The `activityScopeLimit` parameter is available for all communication patterns:
+- `MockRequestReply`
+- `MockServerStreaming`
+- `MockClientStreaming`
+- `MockDuplexStreaming`
+
+### When to disable activity scope limiting
+
+You might want to disable activity scope limiting (`activityScopeLimit: false`) in the following scenarios:
+- When running tests sequentially (not in parallel)
+- When you want a mock to respond to all requests regardless of their origin
+- When the tested application doesn't propagate trace IDs in GRPC calls
+- When you need to share mocks across different activity contexts
+
 ## TODO
 - [ ] Implement error response codes
 - [x] Stub generator
