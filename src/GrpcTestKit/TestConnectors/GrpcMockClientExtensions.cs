@@ -28,7 +28,8 @@ public static class GrpcMockClientExtensions
     /// <param name="request">Expected request</param>
     /// <param name="response">Expected response</param>
     /// <param name="activityScopeLimit">Filter request by current trace-id</param>
-    public static async Task<IAsyncDisposable> MockRequestReply(this IGrpcMockClient @this, string serviceName, string methodName, object? request, object response, bool activityScopeLimit = true)
+    /// <param name="requiredHeaders">When provided, the mock only matches requests that carry these headers with the given (case-sensitive) values. A missing or mismatched header prevents the match.</param>
+    public static async Task<IAsyncDisposable> MockRequestReply(this IGrpcMockClient @this, string serviceName, string methodName, object? request, object response, bool activityScopeLimit = true, IReadOnlyDictionary<string, string>? requiredHeaders = null)
     {
         var responseBody = JsonSerializer.Serialize(response, options: _jsonSerializerOptions);
         return await @this.MockEndpoint(builder =>
@@ -39,22 +40,8 @@ public static class GrpcMockClientExtensions
                 var rmb = x.UsingPost()
                     .WithPath($"/{serviceName}/{methodName}");
 
-                if (activityScopeLimit && System.Diagnostics.Activity.Current is { } currentActivity)
-                {
-                    rmb.WithHeaders(x => x.Add(new HeaderModel
-                    {
-                        Name = "traceparent",
-                        Matchers = new List<MatcherModel>
-                        {
-                            new ()
-                            {
-                                Name = "WildcardMatcher",
-                                Pattern = $"*{currentActivity.TraceId}*",
-                                IgnoreCase = true
-                            }
-                        }
-                    }));
-                }
+                ApplyHeaderMatchers(rmb, activityScopeLimit, requiredHeaders);
+
                 if (request != null)
                 {
                     var requestBody = JsonSerializer.Serialize(request, options: _jsonSerializerOptions);
@@ -67,7 +54,55 @@ public static class GrpcMockClientExtensions
                 }
             }).WithResponse(r => r.WithStatusCode(HttpStatusCode.OK).WithBody(responseBody));
         });
-    } 
+    }
+
+    private static void ApplyHeaderMatchers(RequestModelBuilder rmb, bool activityScopeLimit, IReadOnlyDictionary<string, string>? requiredHeaders)
+    {
+        var headers = new List<HeaderModel>();
+
+        if (activityScopeLimit && System.Diagnostics.Activity.Current is { } currentActivity)
+        {
+            headers.Add(new HeaderModel
+            {
+                Name = "traceparent",
+                Matchers = new List<MatcherModel>
+                {
+                    new()
+                    {
+                        Name = "WildcardMatcher",
+                        Pattern = $"*{currentActivity.TraceId}*",
+                        IgnoreCase = true
+                    }
+                }
+            });
+        }
+
+        if (requiredHeaders is { Count: > 0 })
+        {
+            foreach (var header in requiredHeaders)
+            {
+                headers.Add(new HeaderModel
+                {
+                    Name = header.Key.ToLowerInvariant(),
+                    Matchers = new List<MatcherModel>
+                    {
+                        new() { Name = "ExactMatcher", Pattern = header.Value }
+                    }
+                });
+            }
+        }
+
+        if (headers.Count > 0)
+        {
+            rmb.WithHeaders(headerMatchers =>
+            {
+                foreach (var header in headers)
+                {
+                    headerMatchers.Add(header);
+                }
+            });
+        }
+    }
     
     public static async Task<IAsyncDisposable> MockDuplexStreaming<TRequest,TResponse>(this IGrpcMockClient @this, string serviceName, string methodName, IReadOnlyList<MessageExchange<TRequest,TResponse>> scenario, bool activityScopeLimit = true)
     {
@@ -187,8 +222,9 @@ public static class GrpcMockClientExtensions
     /// <param name="request">List of expected incoming messages</param>
     /// <param name="response">Expected response</param>
     /// <param name="activityScopeLimit">Filter request by current trace-id</param>
-    public static async Task<IAsyncDisposable> MockClientStreaming(this IGrpcMockClient @this, string serviceName, string methodName, IReadOnlyList<object> request, object response, bool activityScopeLimit = true) 
-        => await @this.MockRequestReply(serviceName, methodName, request, response, activityScopeLimit);
+    /// <param name="requiredHeaders">When provided, the mock only matches requests that carry these headers with the given values.</param>
+    public static async Task<IAsyncDisposable> MockClientStreaming(this IGrpcMockClient @this, string serviceName, string methodName, IReadOnlyList<object> request, object response, bool activityScopeLimit = true, IReadOnlyDictionary<string, string>? requiredHeaders = null)
+        => await @this.MockRequestReply(serviceName, methodName, request, response, activityScopeLimit, requiredHeaders);
 
 
     /// <summary>
@@ -199,6 +235,7 @@ public static class GrpcMockClientExtensions
     /// <param name="methodName">Method name</param>
     /// <param name="request">Expected incoming message</param>
     /// <param name="activityScopeLimit">Filter request by current trace-id</param>
-    public static async Task<IAsyncDisposable> MockServerStreaming(this IGrpcMockClient @this, string serviceName, string methodName, object? request, IReadOnlyList<object> response, bool activityScopeLimit = true) 
-        => await @this.MockRequestReply(serviceName, methodName, request, response, activityScopeLimit);
+    /// <param name="requiredHeaders">When provided, the mock only matches requests that carry these headers with the given values.</param>
+    public static async Task<IAsyncDisposable> MockServerStreaming(this IGrpcMockClient @this, string serviceName, string methodName, object? request, IReadOnlyList<object> response, bool activityScopeLimit = true, IReadOnlyDictionary<string, string>? requiredHeaders = null)
+        => await @this.MockRequestReply(serviceName, methodName, request, response, activityScopeLimit, requiredHeaders);
 }

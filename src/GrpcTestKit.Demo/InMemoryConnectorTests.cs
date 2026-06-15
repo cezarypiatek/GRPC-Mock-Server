@@ -400,4 +400,50 @@ public class InMemoryConnectorTests
         await call.ResponseStream.MoveNext();
         Assert.That(call.ResponseStream.Current.Message, Is.EqualTo("Pong 2b"));
     }
+
+    [Test]
+    public async Task should_match_unary_method_only_when_required_headers_are_present()
+    {
+        //Create connector
+        await using var connector = new InMemoryGrpcMockServerConnector(grpcPort: 5033, wireMockPort: 9594);
+
+        //Setup GrpcMockServer
+        var connectionInfo = await connector.Install();
+
+        //Create mocking client
+        var grpcMockClient = connector.CreateClient();
+
+        // Mock that only matches when the caller sends the required headers (e.g. auth metadata)
+        await grpcMockClient.MockRequestReply
+        (
+            serviceName: "my.package.Sample",
+            methodName: "TestRequestReply",
+            request: new { name = "Hello 1" },
+            response: new { message = "Hi there 1" },
+            requiredHeaders: new Dictionary<string, string>
+            {
+                ["X-Client-App"] = "my-service",
+                ["X-Api-Key"] = "secret-123"
+            }
+        );
+
+        //Create GRPC client
+        var channel = GrpcChannel.ForAddress(connectionInfo.GrpcEndpoint);
+        var client = new Sample.SampleClient(channel);
+
+        // gRPC metadata keys are lower-case; header name matching is case-insensitive
+        var headers = new Metadata
+        {
+            { "x-client-app", "my-service" },
+            { "x-api-key", "secret-123" }
+        };
+
+        var response = client.TestRequestReply(new HelloRequest { Name = "Hello 1" }, headers: headers);
+        Assert.That(response.Message, Is.EqualTo("Hi there 1"));
+
+        // Same request without the required headers must not match the mock
+        Assert.That(
+            () => client.TestRequestReply(new HelloRequest { Name = "Hello 1" }),
+            Throws.InstanceOf<RpcException>());
+    }
 }
