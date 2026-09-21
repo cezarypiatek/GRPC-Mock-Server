@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WireMock.Admin.Mappings;
+using WireMock.Matchers.Request;
 
 namespace GrpcTestKit.TestConnectors;
 
@@ -62,6 +63,7 @@ public static class GrpcMockClientExtensions
 
         if (activityScopeLimit && System.Diagnostics.Activity.Current is { } currentActivity)
         {
+            rmb.WithEarlyMatcherType(RequestMatcherType.Header);
             headers.Add(new HeaderModel
             {
                 Name = "traceparent",
